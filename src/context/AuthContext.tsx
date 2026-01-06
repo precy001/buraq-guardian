@@ -42,27 +42,42 @@ export interface RegisterData {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const API_BASE_URL = 'http://localhost/buraq-guardian/api';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   const login = useCallback(async (productId: string, password: string) => {
-    // Simulated API call - replace with real backend
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Mock validation
-    if (productId && password.length >= 6) {
-      setUser({
-        id: '1',
-        productId,
-        fullName: 'John Doe',
-        email: 'john@example.com',
-        phone: '+234 800 000 0000',
-        address: '123 Pool Lane, Lagos',
-        role: 'user',
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          password: password,
+        }),
       });
-      return { success: true };
+
+      const data = await response.json();
+
+      if (data.success) {
+        setUser({
+          id: productId,
+          productId: data.data.product_id,
+          fullName: '', // Will be fetched from profile endpoint if needed
+          email: '',
+          phone: '',
+          address: '',
+          role: 'user',
+        });
+        return { success: true };
+      }
+      return { success: false, error: data.message || 'Login failed' };
+    } catch (error) {
+      return { success: false, error: 'Network error. Please check your connection.' };
     }
-    return { success: false, error: 'Invalid Product ID or Password' };
   }, []);
 
   const adminLogin = useCallback(async (email: string, password: string) => {
@@ -84,13 +99,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (data: RegisterData) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock validation
-    if (data.productId && data.email && data.password.length >= 6) {
-      return { success: true };
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          product_id: data.productId,
+          full_name: data.fullName,
+          email: data.email,
+          phone: data.phone || null,
+          home_address: data.address || null,
+          password: data.password,
+          confirm_password: data.password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        return { success: true };
+      }
+      return { success: false, error: result.message || 'Registration failed' };
+    } catch (error) {
+      return { success: false, error: 'Network error. Please check your connection.' };
     }
-    return { success: false, error: 'Registration failed. Please check your details.' };
   }, []);
 
   const logout = useCallback(() => {
