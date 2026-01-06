@@ -23,6 +23,7 @@ export interface Subscription {
 
 interface AuthContextType {
   user: User | null;
+  subscription: Subscription | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   login: (productId: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -46,6 +47,7 @@ const API_BASE_URL = 'http://localhost/buraq-guardian/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
 
   const login = useCallback(async (productId: string, password: string) => {
     try {
@@ -63,15 +65,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
 
       if (data.success) {
+        const userData = data.data.user;
+        const subData = data.data.subscription;
+
         setUser({
-          id: productId,
-          productId: data.data.product_id,
-          fullName: '', // Will be fetched from profile endpoint if needed
-          email: '',
-          phone: '',
-          address: '',
+          id: userData.id,
+          productId: userData.product_id,
+          fullName: userData.full_name || '',
+          email: userData.email || '',
+          phone: userData.phone || '',
+          address: userData.home_address || '',
           role: 'user',
         });
+
+        if (subData) {
+          setSubscription({
+            id: subData.id,
+            productId: userData.product_id,
+            planName: subData.plan_name,
+            status: subData.status,
+            startDate: subData.start_date,
+            expiryDate: subData.end_date,
+            daysRemaining: subData.days_remaining,
+            totalDays: subData.total_days,
+          });
+        } else {
+          setSubscription(null);
+        }
+
         return { success: true };
       }
       return { success: false, error: data.message || 'Login failed' };
@@ -129,12 +150,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
+    setSubscription(null);
   }, []);
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        subscription,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
         login,

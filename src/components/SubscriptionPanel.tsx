@@ -1,20 +1,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Calendar, Clock, Cpu } from 'lucide-react';
+import { Shield, Calendar, Clock, Cpu, AlertCircle } from 'lucide-react';
 import type { Subscription } from '@/context/AuthContext';
 
 interface SubscriptionPanelProps {
-  subscription: Subscription;
+  subscription: Subscription | null;
   productId: string;
 }
 
 export function SubscriptionPanel({ subscription, productId }: SubscriptionPanelProps) {
-  const isActive = subscription.status === 'active';
-  const isExpiringSoon = subscription.daysRemaining <= 7 && subscription.daysRemaining > 0;
+  const isActive = subscription?.status === 'active';
+  const isExpiringSoon = subscription ? subscription.daysRemaining <= 7 && subscription.daysRemaining > 0 : false;
 
   return (
     <motion.div
@@ -41,7 +40,7 @@ export function SubscriptionPanel({ subscription, productId }: SubscriptionPanel
                 Device protection and monitoring status
               </CardDescription>
             </div>
-            <StatusIndicator status={subscription.status} />
+            <StatusIndicator status={subscription?.status || 'expired'} />
           </div>
         </CardHeader>
         
@@ -57,59 +56,71 @@ export function SubscriptionPanel({ subscription, productId }: SubscriptionPanel
             </div>
           </div>
 
-          {/* Subscription Details */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-muted/30">
-              <p className="text-sm text-muted-foreground mb-1">Current Plan</p>
-              <p className="font-semibold">{subscription.planName}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-muted/30">
-              <div className="flex items-center gap-2 mb-1">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Expires</p>
+          {subscription ? (
+            <>
+              {/* Subscription Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-muted/30">
+                  <p className="text-sm text-muted-foreground mb-1">Current Plan</p>
+                  <p className="font-semibold">{subscription.planName}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-muted/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Expires</p>
+                  </div>
+                  <p className="font-semibold">{new Date(subscription.expiryDate).toLocaleDateString()}</p>
+                </div>
               </div>
-              <p className="font-semibold">{new Date(subscription.expiryDate).toLocaleDateString()}</p>
-            </div>
-          </div>
 
-          {/* Days Remaining */}
-          <div className="p-4 rounded-xl bg-accent">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-accent-foreground" />
-                <span className="text-accent-foreground font-medium">Days Remaining</span>
+              {/* Days Remaining */}
+              <div className="p-4 rounded-xl bg-accent">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-accent-foreground" />
+                    <span className="text-accent-foreground font-medium">Days Remaining</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      'text-3xl font-bold font-heading',
+                      isExpiringSoon ? 'text-warning' : 'text-accent-foreground'
+                    )}>
+                      {subscription.daysRemaining}
+                    </span>
+                    {isExpiringSoon && (
+                      <Badge variant="warning" className="text-xs">
+                        Expiring Soon
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Progress bar */}
+                <div className="mt-3 h-2 bg-background/50 rounded-full overflow-hidden">
+                  <div 
+                    className={cn(
+                      'h-full rounded-full transition-all',
+                      isExpiringSoon ? 'bg-warning' : 'bg-success'
+                    )}
+                    style={{ width: `${Math.min((subscription.daysRemaining / subscription.totalDays) * 100, 100)}%` }}
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={cn(
-                  'text-3xl font-bold font-heading',
-                  isExpiringSoon ? 'text-warning' : 'text-accent-foreground'
-                )}>
-                  {subscription.daysRemaining}
-                </span>
-                {isExpiringSoon && (
-                  <Badge variant="warning" className="text-xs">
-                    Expiring Soon
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
-            {/* Progress bar */}
-            <div className="mt-3 h-2 bg-background/50 rounded-full overflow-hidden">
-              <div 
-                className={cn(
-                  'h-full rounded-full transition-all',
-                  isExpiringSoon ? 'bg-warning' : 'bg-success'
-                )}
-                style={{ width: `${Math.min((subscription.daysRemaining / subscription.totalDays) * 100, 100)}%` }}
-              />
-            </div>
-          </div>
 
-          {!isActive && (
-            <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20">
-              <p className="text-sm text-destructive font-medium">
-                ⚠️ Your device protection is currently inactive. Please renew your subscription to restore full functionality.
+              {!isActive && (
+                <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+                  <p className="text-sm text-destructive font-medium">
+                    ⚠️ Your device protection is currently inactive. Please renew your subscription to restore full functionality.
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="p-6 rounded-xl bg-muted/30 text-center">
+              <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground font-medium mb-1">No Active Subscription</p>
+              <p className="text-sm text-muted-foreground">
+                Select a plan to activate your device protection
               </p>
             </div>
           )}
