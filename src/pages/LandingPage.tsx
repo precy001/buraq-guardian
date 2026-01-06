@@ -80,8 +80,9 @@ export default function LandingPage() {
               </div>
               
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-bold text-foreground mb-6 leading-tight">
-                Protect Your Loved Ones with
-                <span className="text-gradient block mt-2">Intelligent Pool Safety</span>
+                Protect Your Loved Ones with 
+              <br />
+                <span className="text-4xl sm:text-5xl lg:text-6xl font-heading font-bold text-foreground mb-6 leading-tight">Intelligent Pool Safety</span>
               </h1>
               
               <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -118,7 +119,7 @@ export default function LandingPage() {
               >
                 <Card variant="glass" className="text-center p-6">
                   <CardContent className="p-0">
-                    <p className="text-3xl sm:text-4xl font-heading font-bold text-gradient mb-1">
+                    <p className="text-3xl sm:text-4xl font-heading font-bold mb-1">
                       {stat.value}
                     </p>
                     <p className="text-sm text-muted-foreground">{stat.label}</p>
