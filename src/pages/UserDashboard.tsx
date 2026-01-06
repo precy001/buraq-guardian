@@ -12,11 +12,12 @@ import type { Subscription } from '@/context/AuthContext';
 const mockSubscription: Subscription = {
   id: 'sub-1',
   productId: 'BRQ-2024-0001',
-  planName: 'Quarterly Plan',
+  planName: 'Monthly Plan',
   status: 'active',
   startDate: '2024-01-15',
-  expiryDate: '2024-04-15',
+  expiryDate: '2024-02-14',
   daysRemaining: 23,
+  totalDays: 30,
 };
 
 export default function UserDashboard() {

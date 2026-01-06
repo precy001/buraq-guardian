@@ -101,7 +101,7 @@ export function SubscriptionPanel({ subscription, productId }: SubscriptionPanel
                   'h-full rounded-full transition-all',
                   isExpiringSoon ? 'bg-warning' : 'bg-success'
                 )}
-                style={{ width: `${Math.min((subscription.daysRemaining / 30) * 100, 100)}%` }}
+                style={{ width: `${Math.min((subscription.daysRemaining / subscription.totalDays) * 100, 100)}%` }}
               />
             </div>
           </div>
