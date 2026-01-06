@@ -18,6 +18,7 @@ export interface Subscription {
   startDate: string;
   expiryDate: string;
   daysRemaining: number;
+  totalDays: number;
 }
 
 interface AuthContextType {
