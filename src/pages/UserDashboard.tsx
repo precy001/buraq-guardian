@@ -5,23 +5,10 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { SubscriptionPanel } from '@/components/SubscriptionPanel';
 import { PaymentPanel } from '@/components/PaymentPanel';
-import { Waves, LogOut, User, Settings } from 'lucide-react';
-import type { Subscription } from '@/context/AuthContext';
-
-// Mock subscription data - replace with API call
-const mockSubscription: Subscription = {
-  id: 'sub-1',
-  productId: 'BRQ-2024-0001',
-  planName: 'Monthly Plan',
-  status: 'active',
-  startDate: '2024-01-15',
-  expiryDate: '2024-02-14',
-  daysRemaining: 23,
-  totalDays: 30,
-};
+import { Waves, LogOut, User, Settings, AlertTriangle } from 'lucide-react';
 
 export default function UserDashboard() {
-  const { user, logout } = useAuth();
+  const { user, subscription, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -67,22 +54,36 @@ export default function UserDashboard() {
           className="mb-8"
         >
           <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-            Welcome back, {user?.fullName?.split(' ')[0]}!
+            Welcome back, {user?.fullName?.split(' ')[0] || 'User'}!
           </h1>
           <p className="text-muted-foreground">
             Manage your device subscription and payment details
           </p>
         </motion.div>
 
+        {/* No subscription warning */}
+        {!subscription && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center gap-3"
+          >
+            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              You don't have an active subscription. Choose a plan below to activate your device.
+            </p>
+          </motion.div>
+        )}
+
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Subscription Status */}
           <SubscriptionPanel
-            subscription={mockSubscription}
+            subscription={subscription}
             productId={user?.productId || 'BRQ-XXXX-XXXX'}
           />
 
           {/* Payment Panel */}
-          <PaymentPanel currentPlanId={mockSubscription.planName} />
+          <PaymentPanel currentPlanId={subscription?.planName} />
         </div>
       </main>
     </div>
