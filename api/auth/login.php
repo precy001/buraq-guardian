@@ -1,6 +1,7 @@
 <?php
 require "../config/database.php";
 require "../utils/response.php";
+require "../middleware/cors.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 
