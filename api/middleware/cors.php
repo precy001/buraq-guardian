@@ -1,6 +1,4 @@
 <?php
-// Allow requests from your frontend domain(s)
-// In production, REPLACE * with your actual domain
 header("Access-Control-Allow-Origin: *");
 
 // Allow cookies / authorization headers if needed later
