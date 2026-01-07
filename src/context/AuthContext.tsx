@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 
 export interface User {
   id: string;
@@ -26,6 +26,7 @@ interface AuthContextType {
   subscription: Subscription | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isLoading: boolean;
   login: (productId: string, password: string) => Promise<{ success: boolean; error?: string }>;
   adminLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
@@ -45,10 +46,52 @@ export interface RegisterData {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE_URL = 'http://localhost/buraq-guardian/api';
+const STORAGE_KEY = 'buraq_auth_session';
+
+// Helper to load session from localStorage
+const loadSession = (): { user: User | null; subscription: Subscription | null } => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return { user: parsed.user || null, subscription: parsed.subscription || null };
+    }
+  } catch (e) {
+    console.error('Failed to load session:', e);
+  }
+  return { user: null, subscription: null };
+};
+
+// Helper to save session to localStorage
+const saveSession = (user: User | null, subscription: Subscription | null) => {
+  if (user) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ user, subscription }));
+  } else {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Restore session on mount
+  useEffect(() => {
+    const { user: storedUser, subscription: storedSubscription } = loadSession();
+    if (storedUser) {
+      setUser(storedUser);
+      setSubscription(storedSubscription);
+    }
+    setIsLoading(false);
+  }, []);
+
+  // Persist session on changes
+  useEffect(() => {
+    if (!isLoading) {
+      saveSession(user, subscription);
+    }
+  }, [user, subscription, isLoading]);
 
   const login = useCallback(async (productId: string, password: string) => {
     try {
@@ -188,6 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         subscription,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
+        isLoading,
         login,
         adminLogin,
         logout,
