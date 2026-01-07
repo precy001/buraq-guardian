@@ -1,7 +1,7 @@
 <?php
-function jsonResponse($status, $message, $data = null) {
+function jsonResponse($success, $message, $data = null) {
     echo json_encode([
-        "status" => $status,
+        "success" => $success,
         "message" => $message,
         "data" => $data
     ]);
