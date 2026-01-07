@@ -30,6 +30,7 @@ interface AuthContextType {
   adminLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
+  refreshSubscription: () => Promise<void>;
 }
 
 export interface RegisterData {
@@ -153,6 +154,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSubscription(null);
   }, []);
 
+  const refreshSubscription = useCallback(async () => {
+    if (!user?.productId) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/subscriptions/status.php?product_id=${encodeURIComponent(user.productId)}`);
+      const data = await response.json();
+
+      if (data.success && data.data?.subscription) {
+        const subData = data.data.subscription;
+        setSubscription({
+          id: subData.id,
+          productId: user.productId,
+          planName: subData.plan_name,
+          status: subData.status,
+          startDate: subData.start_date,
+          expiryDate: subData.end_date,
+          daysRemaining: subData.days_remaining,
+          totalDays: subData.total_days,
+        });
+      } else {
+        setSubscription(null);
+      }
+    } catch (error) {
+      console.error('Failed to refresh subscription:', error);
+    }
+  }, [user?.productId]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -164,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         adminLogin,
         logout,
         register,
+        refreshSubscription,
       }}
     >
       {children}

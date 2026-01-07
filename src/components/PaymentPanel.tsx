@@ -3,14 +3,16 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, CreditCard, Zap, Crown, Star } from 'lucide-react';
+import { Check, CreditCard, Zap, Crown, Star, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 interface Plan {
   id: string;
   name: string;
   price: number;
   duration: string;
+  durationDays: number;
   popular?: boolean;
   features: string[];
   savings?: string;
@@ -22,6 +24,7 @@ const plans: Plan[] = [
     name: 'Daily',
     price: 10000,
     duration: '1 day',
+    durationDays: 1,
     features: ['24/7 Monitoring', 'Instant Alerts', 'Auto Rescue Activation', 'Email Support'],
   },
   {
@@ -29,6 +32,7 @@ const plans: Plan[] = [
     name: 'Weekly',
     price: 30000,
     duration: '7 days',
+    durationDays: 7,
     savings: 'Save 57%',
     features: ['24/7 Monitoring', 'Instant Alerts', 'Auto Rescue Activation', 'SMS Alerts', 'Priority Support'],
   },
@@ -37,6 +41,7 @@ const plans: Plan[] = [
     name: 'Monthly',
     price: 50000,
     duration: '30 days',
+    durationDays: 30,
     popular: true,
     savings: 'Save 83%',
     features: ['24/7 Monitoring', 'Instant Alerts', 'Auto Rescue Activation', 'SMS Alerts', 'Priority Support', 'Weekly Reports'],
@@ -46,16 +51,20 @@ const plans: Plan[] = [
     name: 'Yearly',
     price: 550000,
     duration: '365 days',
+    durationDays: 365,
     savings: 'Save 85%',
     features: ['24/7 Monitoring', 'Instant Alerts', 'Auto Rescue Activation', 'SMS Alerts', 'Dedicated Support', 'Monthly Reports', 'Advanced Analytics', 'Free Maintenance Check'],
   },
 ];
+
+const API_BASE_URL = 'http://localhost/buraq-guardian/api';
 
 interface PaymentPanelProps {
   currentPlanId?: string;
 }
 
 export function PaymentPanel({ currentPlanId }: PaymentPanelProps) {
+  const { user } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -65,15 +74,56 @@ export function PaymentPanel({ currentPlanId }: PaymentPanelProps) {
       return;
     }
 
+    if (!user) {
+      toast.error('Please log in to continue');
+      return;
+    }
+
+    const plan = plans.find(p => p.id === selectedPlan);
+    if (!plan) {
+      toast.error('Invalid plan selected');
+      return;
+    }
+
     setIsProcessing(true);
-    
-    // Simulate Paystack redirect
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast.success('Redirecting to Paystack...');
-    // In production: window.location.href = paystackCheckoutUrl;
-    
-    setIsProcessing(false);
+
+    try {
+      // Call backend to initialize Paystack payment
+      const response = await fetch(`${API_BASE_URL}/subscriptions/initiate.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          product_id: user.productId,
+          plan_name: plan.name,
+          amount: plan.price * 100, // Convert to kobo
+          email: user.email,
+          duration_days: plan.durationDays,
+          callback_url: `${window.location.origin}/payment/verify`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data?.authorization_url) {
+        toast.success('Redirecting to Paystack...');
+        
+        // Store reference for verification after redirect
+        sessionStorage.setItem('payment_reference', data.data.reference);
+        sessionStorage.setItem('payment_plan', plan.name);
+        
+        // Redirect to Paystack checkout
+        window.location.href = data.data.authorization_url;
+      } else {
+        toast.error(data.message || 'Failed to initialize payment');
+      }
+    } catch (error) {
+      console.error('Payment initialization error:', error);
+      toast.error('Network error. Please check your connection.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -112,11 +162,12 @@ export function PaymentPanel({ currentPlanId }: PaymentPanelProps) {
               >
                 <button
                   onClick={() => setSelectedPlan(plan.id)}
+                  disabled={isProcessing}
                   className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 ${
                     selectedPlan === plan.id
                       ? 'border-primary bg-primary/5 shadow-water'
                       : 'border-border hover:border-primary/50 bg-card'
-                  }`}
+                  } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -175,8 +226,8 @@ export function PaymentPanel({ currentPlanId }: PaymentPanelProps) {
           >
             {isProcessing ? (
               <>
-                <span className="animate-spin">⏳</span>
-                Processing...
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Initializing Payment...
               </>
             ) : (
               <>
