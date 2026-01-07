@@ -13,6 +13,7 @@ import RegisterPage from "./pages/RegisterPage";
 import UserDashboard from "./pages/UserDashboard";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import PaymentVerifyPage from "./pages/PaymentVerifyPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <UserDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payment/verify"
+              element={
+                <ProtectedRoute>
+                  <PaymentVerifyPage />
                 </ProtectedRoute>
               }
             />
