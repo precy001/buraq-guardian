@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { SubscriptionPanel } from '@/components/SubscriptionPanel';
 import { PaymentPanel } from '@/components/PaymentPanel';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Waves, LogOut, User, Settings, AlertTriangle } from 'lucide-react';
 
 export default function UserDashboard() {
@@ -34,6 +35,7 @@ export default function UserDashboard() {
                 <User className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-foreground">{user?.fullName}</span>
               </div>
+              <ThemeToggle />
               <Button variant="ghost" size="icon">
                 <Settings className="w-5 h-5" />
               </Button>

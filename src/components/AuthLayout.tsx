@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Waves, Shield, Zap, LifeBuoy } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -83,13 +84,14 @@ export function AuthLayout({ children, title, subtitle, showBackLink = true }: A
       
       {/* Right Panel - Form */}
       <div className="flex-1 flex flex-col gradient-ocean">
-        <div className="p-6 lg:hidden">
-          <Link to="/" className="flex items-center gap-3">
+        <div className="p-6 flex items-center justify-between lg:justify-end">
+          <Link to="/" className="flex items-center gap-3 lg:hidden">
             <div className="w-10 h-10 rounded-xl gradient-water flex items-center justify-center shadow-water">
               <Waves className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-xl font-heading font-bold text-foreground">The Buraq</span>
           </Link>
+          <ThemeToggle />
         </div>
         
         <div className="flex-1 flex items-center justify-center p-6 lg:p-12">

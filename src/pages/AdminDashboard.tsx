@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import {
   Waves, LogOut, Search, Filter, Users, Cpu, CreditCard, AlertTriangle,
   Eye, Play, Pause, Clock, MoreVertical, ChevronDown, RefreshCw
@@ -141,6 +142,7 @@ export default function AdminDashboard() {
               <span className="hidden sm:block text-sm text-secondary-foreground/80">
                 {user?.email}
               </span>
+              <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={handleLogout} className="text-secondary-foreground hover:bg-secondary-foreground/10">
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
