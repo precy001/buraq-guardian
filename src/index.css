@@ -51,9 +51,9 @@
 
     --radius: 0.75rem;
 
-    /* Gradients */
+    /* Gradients - use CSS variables for theme awareness */
     --gradient-water: linear-gradient(135deg, hsl(199 89% 48%), hsl(188 78% 41%));
-    --gradient-ocean: linear-gradient(180deg, hsl(200 20% 98%) 0%, hsl(199 50% 95%) 100%);
+    --gradient-ocean: hsl(var(--background));
     --gradient-hero: linear-gradient(135deg, hsl(215 50% 15%) 0%, hsl(199 60% 25%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(200 20% 98%) 100%);
 
@@ -125,6 +125,18 @@
     --sidebar-accent-foreground: 210 20% 88%;
     --sidebar-border: 220 20% 16%;
     --sidebar-ring: 199 75% 52%;
+  }
+  .dark {
+    /* Dark mode gradients */
+    --gradient-water: linear-gradient(135deg, hsl(199 75% 52%), hsl(188 65% 45%));
+    --gradient-ocean: hsl(var(--background));
+    --gradient-hero: linear-gradient(135deg, hsl(220 30% 12%) 0%, hsl(199 50% 20%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(220 25% 15%) 0%, hsl(220 25% 12%) 100%);
+    
+    /* Dark mode shadows - more subtle */
+    --shadow-water: 0 4px 24px -4px hsl(199 75% 52% / 0.2);
+    --shadow-soft: 0 2px 12px -2px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
   }
 }
 
