@@ -18,7 +18,7 @@ export default function UserDashboard() {
   };
 
   return (
-    <div className="min-h-screen gradient-ocean">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-4 sm:px-6">

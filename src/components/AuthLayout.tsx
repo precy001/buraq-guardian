@@ -83,7 +83,7 @@ export function AuthLayout({ children, title, subtitle, showBackLink = true }: A
       </div>
       
       {/* Right Panel - Form */}
-      <div className="flex-1 flex flex-col gradient-ocean">
+      <div className="flex-1 flex flex-col bg-background">
         <div className="p-6 flex items-center justify-between lg:justify-end">
           <Link to="/" className="flex items-center gap-3 lg:hidden">
             <div className="w-10 h-10 rounded-xl gradient-water flex items-center justify-center shadow-water">
