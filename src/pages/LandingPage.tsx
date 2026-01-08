@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Waves, Shield, Zap, LifeBuoy, ChevronRight, Play, Users, Award, Clock } from 'lucide-react';
 
 const features = [
@@ -50,6 +51,7 @@ export default function LandingPage() {
             </Link>
             
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <Link to="/login">
                 <Button variant="ghost" size="sm">
                   Login
