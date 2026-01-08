@@ -27,13 +27,13 @@ export function AuthLayout({ children, title, subtitle, showBackLink = true }: A
           </svg>
         </div>
         
-        <div className="relative z-10 flex flex-col justify-between p-12 text-primary-foreground">
+        <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div>
             <Link to="/" className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl gradient-water flex items-center justify-center shadow-water">
-                <Waves className="w-6 h-6" />
+                <Waves className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-heading font-bold">The Buraq</span>
+              <span className="text-2xl font-heading font-bold text-white">The Buraq</span>
             </Link>
           </div>
           
@@ -43,12 +43,12 @@ export function AuthLayout({ children, title, subtitle, showBackLink = true }: A
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <h1 className="text-4xl xl:text-5xl font-heading font-bold leading-tight mb-4">
+              <h1 className="text-4xl xl:text-5xl font-heading font-bold leading-tight mb-4 text-white">
                 Advanced Pool Safety,
                 <br />
                 <span className="text-primary">Automated Protection</span>
               </h1>
-              <p className="text-lg text-primary-foreground/80 max-w-md">
+              <p className="text-lg text-white/80 max-w-md">
                 The Buraq drowning detection system provides real-time monitoring and automatic rescue activation for complete peace of mind.
               </p>
             </motion.div>
@@ -65,10 +65,10 @@ export function AuthLayout({ children, title, subtitle, showBackLink = true }: A
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 + i * 0.1 }}
-                  className="flex items-center gap-3 text-primary-foreground/90"
+                  className="flex items-center gap-3 text-white/90"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                    <item.icon className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+                    <item.icon className="w-5 h-5 text-white" />
                   </div>
                   <span className="text-sm font-medium">{item.label}</span>
                 </motion.div>
@@ -76,7 +76,7 @@ export function AuthLayout({ children, title, subtitle, showBackLink = true }: A
             </div>
           </div>
           
-          <p className="text-sm text-primary-foreground/60">
+          <p className="text-sm text-white/60">
             © 2024 The Buraq. All rights reserved.
           </p>
         </div>

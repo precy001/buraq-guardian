@@ -176,23 +176,23 @@ export default function LandingPage() {
       <section className="py-20 px-4 sm:px-6">
         <div className="container mx-auto">
           <Card variant="elevated" className="gradient-hero overflow-hidden">
-            <CardContent className="p-8 sm:p-12 text-center text-primary-foreground">
+            <CardContent className="p-8 sm:p-12 text-center text-white">
               <div className="max-w-2xl mx-auto">
-                <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4">
+                <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4 text-white">
                   Ready to Protect Your Pool?
                 </h2>
-                <p className="text-lg text-primary-foreground/80 mb-8">
+                <p className="text-lg text-white/80 mb-8">
                   Register your Buraq device today and activate your subscription to start protecting your loved ones.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Link to="/register">
-                    <Button variant="hero" size="lg" className="bg-primary-foreground text-secondary hover:bg-primary-foreground/90">
+                    <Button variant="hero" size="lg" className="bg-white text-secondary hover:bg-white/90">
                       Get Started Now
                       <ChevronRight className="w-5 h-5" />
                     </Button>
                   </Link>
                   <Link to="/login">
-                    <Button variant="outline" size="lg" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10">
+                    <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10">
                       Already Registered?
                     </Button>
                   </Link>
