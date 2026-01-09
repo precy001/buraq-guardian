@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,10 @@ import { StatusIndicator } from '@/components/StatusIndicator';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Logo } from '@/components/Logo';
 import {
-  Waves, LogOut, Search, Filter, Users, Cpu, CreditCard, AlertTriangle,
-  Eye, Play, Pause, Clock, MoreVertical, ChevronDown, RefreshCw
+  LogOut, Search, Filter, Users, Cpu, CreditCard, AlertTriangle,
+  Eye, Play, Pause, Clock, MoreVertical, ChevronDown, RefreshCw, Plus
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -28,97 +29,175 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-// Mock data - replace with API
-const mockProducts = [
-  {
-    id: '1',
-    productId: 'BRQ-2024-0001',
-    userName: 'John Doe',
-    email: 'john@example.com',
-    status: 'active' as const,
-    planName: 'Quarterly',
-    expiryDate: '2024-04-15',
-    daysRemaining: 23,
-  },
-  {
-    id: '2',
-    productId: 'BRQ-2024-0002',
-    userName: 'Jane Smith',
-    email: 'jane@example.com',
-    status: 'expired' as const,
-    planName: 'Monthly',
-    expiryDate: '2024-03-01',
-    daysRemaining: 0,
-  },
-  {
-    id: '3',
-    productId: 'BRQ-2024-0003',
-    userName: 'Mike Johnson',
-    email: 'mike@example.com',
-    status: 'active' as const,
-    planName: 'Yearly',
-    expiryDate: '2025-01-20',
-    daysRemaining: 298,
-  },
-  {
-    id: '4',
-    productId: 'BRQ-2024-0004',
-    userName: 'Sarah Williams',
-    email: 'sarah@example.com',
-    status: 'suspended' as const,
-    planName: 'Quarterly',
-    expiryDate: '2024-05-10',
-    daysRemaining: 45,
-  },
-  {
-    id: '5',
-    productId: 'BRQ-2024-0005',
-    userName: 'David Brown',
-    email: 'david@example.com',
-    status: 'active' as const,
-    planName: 'Monthly',
-    expiryDate: '2024-04-01',
-    daysRemaining: 5,
-  },
-];
+const API_BASE_URL = 'http://localhost/buraq-guardian/api';
 
-const stats = [
-  { label: 'Total Devices', value: '523', icon: Cpu, color: 'text-primary' },
-  { label: 'Active Subscriptions', value: '412', icon: CreditCard, color: 'text-success' },
-  { label: 'Expiring Soon', value: '28', icon: AlertTriangle, color: 'text-warning' },
-  { label: 'Total Users', value: '498', icon: Users, color: 'text-secondary' },
-];
+interface OverviewStats {
+  total_products: number;
+  registered_products: number;
+  unregistered_products: number;
+  active_subscriptions: number;
+  expired_subscriptions: number;
+  suspended_subscriptions: number;
+  total_users: number;
+  monthly_revenue: number;
+}
 
-type FilterType = 'all' | 'active' | 'expired' | 'suspended' | 'expiring-soon';
+interface Product {
+  id: string;
+  product_id: string;
+  is_registered: boolean;
+  created_at: string;
+  user_name?: string;
+  user_email?: string;
+  subscription_status?: 'active' | 'expired' | 'suspended' | null;
+  plan_name?: string;
+  expiry_date?: string;
+  days_remaining?: number;
+}
+
+type FilterType = 'all' | 'active' | 'expired' | 'suspended' | 'expiring-soon' | 'registered' | 'unregistered';
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth();
+  const { user, adminSession, adminLogout } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [stats, setStats] = useState<OverviewStats | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
 
-  const handleLogout = () => {
-    logout();
+  const fetchOverview = useCallback(async () => {
+    if (!adminSession?.token) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/overview.php`, {
+        headers: {
+          'Authorization': `Bearer ${adminSession.token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setStats(data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch overview:', error);
+    }
+  }, [adminSession?.token]);
+
+  const fetchProducts = useCallback(async () => {
+    if (!adminSession?.token) return;
+    
+    try {
+      const params = new URLSearchParams({
+        limit: '50',
+        search: searchQuery,
+      });
+      
+      if (filter === 'registered' || filter === 'unregistered') {
+        params.append('filter', filter);
+      } else if (filter !== 'all' && filter !== 'expiring-soon') {
+        params.append('subscription_status', filter);
+      }
+
+      const response = await fetch(`${API_BASE_URL}/admin/products/index.php?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${adminSession.token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.success) {
+        setProducts(data.data.products);
+      }
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+    }
+  }, [adminSession?.token, searchQuery, filter]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchOverview(), fetchProducts()]);
+      setIsLoading(false);
+    };
+    loadData();
+  }, [fetchOverview, fetchProducts]);
+
+  const handleLogout = async () => {
+    await adminLogout();
     navigate('/');
   };
 
-  const filteredProducts = mockProducts.filter(product => {
-    const matchesSearch = 
-      product.productId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.email.toLowerCase().includes(searchQuery.toLowerCase());
+  const handleGenerateProductId = async () => {
+    if (!adminSession?.token) return;
+    
+    setIsGenerating(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/products/generate.php`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminSession.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success(`New Product ID generated: ${data.data.product_id}`);
+        fetchProducts();
+        fetchOverview();
+      } else {
+        toast.error(data.message || 'Failed to generate product ID');
+      }
+    } catch (error) {
+      toast.error('Network error. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
-    const matchesFilter = 
-      filter === 'all' ||
-      (filter === 'expiring-soon' && product.status === 'active' && product.daysRemaining <= 7) ||
-      filter === product.status;
+  const handleSubscriptionAction = async (action: 'activate' | 'suspend' | 'expire' | 'extend', productId: string) => {
+    if (!adminSession?.token) return;
+    
+    try {
+      const body: Record<string, string | number> = { product_id: productId, action };
+      if (action === 'extend') {
+        body.extend_days = 30;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/admin/subscriptions/update.php`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminSession.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success(`Subscription ${action}d successfully`);
+        fetchProducts();
+        fetchOverview();
+      } else {
+        toast.error(data.message || `Failed to ${action} subscription`);
+      }
+    } catch (error) {
+      toast.error('Network error. Please try again.');
+    }
+  };
 
-    return matchesSearch && matchesFilter;
+  const filteredProducts = products.filter(product => {
+    if (filter === 'expiring-soon') {
+      return product.subscription_status === 'active' && (product.days_remaining || 0) <= 7;
+    }
+    return true;
   });
 
-  const handleAction = (action: string, productId: string) => {
-    toast.success(`${action} action triggered for ${productId}`);
-  };
+  const statsCards = [
+    { label: 'Total Devices', value: stats?.total_products || 0, icon: Cpu, color: 'text-primary' },
+    { label: 'Active Subscriptions', value: stats?.active_subscriptions || 0, icon: CreditCard, color: 'text-success' },
+    { label: 'Expired', value: stats?.expired_subscriptions || 0, icon: AlertTriangle, color: 'text-warning' },
+    { label: 'Total Users', value: stats?.total_users || 0, icon: Users, color: 'text-secondary' },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -127,12 +206,11 @@ export default function AdminDashboard() {
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-water flex items-center justify-center">
-                <Waves className="w-5 h-5 text-primary-foreground" />
+              <div className="bg-white rounded-lg p-1">
+                <Logo size="sm" />
               </div>
               <div>
-                <span className="font-heading font-bold">The Buraq</span>
-                <Badge variant="outline" className="ml-2 text-xs border-secondary-foreground/30">
+                <Badge variant="outline" className="text-xs border-secondary-foreground/30">
                   Admin
                 </Badge>
               </div>
@@ -157,19 +235,25 @@ export default function AdminDashboard() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         >
-          <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-            Admin Dashboard
-          </h1>
-          <p className="text-muted-foreground">
-            Monitor and manage all registered devices and subscriptions
-          </p>
+          <div>
+            <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
+              Admin Dashboard
+            </h1>
+            <p className="text-muted-foreground">
+              Monitor and manage all registered devices and subscriptions
+            </p>
+          </div>
+          <Button onClick={handleGenerateProductId} disabled={isGenerating}>
+            <Plus className="w-4 h-4 mr-2" />
+            {isGenerating ? 'Generating...' : 'Generate Product ID'}
+          </Button>
         </motion.div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat, index) => (
+          {statsCards.map((stat, index) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
@@ -183,7 +267,9 @@ export default function AdminDashboard() {
                       <stat.icon className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-2xl sm:text-3xl font-heading font-bold">{stat.value}</p>
+                      <p className="text-2xl sm:text-3xl font-heading font-bold">
+                        {isLoading ? '-' : stat.value}
+                      </p>
                       <p className="text-sm text-muted-foreground">{stat.label}</p>
                     </div>
                   </div>
@@ -208,7 +294,7 @@ export default function AdminDashboard() {
                     View and manage all device registrations and subscriptions
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => { fetchProducts(); fetchOverview(); }}>
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Refresh
                 </Button>
@@ -236,7 +322,7 @@ export default function AdminDashboard() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-popover">
-                    {(['all', 'active', 'expired', 'suspended', 'expiring-soon'] as FilterType[]).map((f) => (
+                    {(['all', 'registered', 'unregistered', 'active', 'expired', 'suspended', 'expiring-soon'] as FilterType[]).map((f) => (
                       <DropdownMenuItem key={f} onClick={() => setFilter(f)}>
                         {f === 'all' ? 'All Status' : f.charAt(0).toUpperCase() + f.slice(1).replace('-', ' ')}
                       </DropdownMenuItem>
@@ -260,74 +346,96 @@ export default function AdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredProducts.map((product) => (
-                      <TableRow key={product.id} className="hover:bg-muted/30">
-                        <TableCell className="font-mono font-medium">{product.productId}</TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{product.userName}</p>
-                            <p className="text-sm text-muted-foreground">{product.email}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{product.planName}</TableCell>
-                        <TableCell>
-                          <StatusIndicator status={product.status} />
-                        </TableCell>
-                        <TableCell>{new Date(product.expiryDate).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <span className={`font-medium ${
-                            product.daysRemaining <= 7 && product.status === 'active'
-                              ? 'text-warning'
-                              : product.status === 'expired'
-                              ? 'text-destructive'
-                              : ''
-                          }`}>
-                            {product.daysRemaining}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-popover">
-                              <DropdownMenuItem onClick={() => handleAction('View', product.productId)}>
-                                <Eye className="w-4 h-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              {product.status !== 'active' && (
-                                <DropdownMenuItem onClick={() => handleAction('Activate', product.productId)}>
-                                  <Play className="w-4 h-4 mr-2" />
-                                  Activate
-                                </DropdownMenuItem>
-                              )}
-                              {product.status === 'active' && (
-                                <DropdownMenuItem onClick={() => handleAction('Suspend', product.productId)}>
-                                  <Pause className="w-4 h-4 mr-2" />
-                                  Suspend
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onClick={() => handleAction('Extend', product.productId)}>
-                                <Clock className="w-4 h-4 mr-2" />
-                                Extend Subscription
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          Loading...
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : filteredProducts.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          <Cpu className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                          <p className="text-muted-foreground">No devices found matching your criteria</p>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredProducts.map((product) => (
+                        <TableRow key={product.id} className="hover:bg-muted/30">
+                          <TableCell className="font-mono font-medium">{product.product_id}</TableCell>
+                          <TableCell>
+                            {product.is_registered && product.user_name ? (
+                              <div>
+                                <p className="font-medium">{product.user_name}</p>
+                                <p className="text-sm text-muted-foreground">{product.user_email}</p>
+                              </div>
+                            ) : (
+                              <Badge variant="outline">Unregistered</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>{product.plan_name || '-'}</TableCell>
+                          <TableCell>
+                            {product.subscription_status ? (
+                              <StatusIndicator status={product.subscription_status} />
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {product.expiry_date 
+                              ? new Date(product.expiry_date).toLocaleDateString() 
+                              : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`font-medium ${
+                              (product.days_remaining || 0) <= 7 && product.subscription_status === 'active'
+                                ? 'text-warning'
+                                : product.subscription_status === 'expired'
+                                ? 'text-destructive'
+                                : ''
+                            }`}>
+                              {product.days_remaining ?? '-'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-popover">
+                                <DropdownMenuItem onClick={() => toast.info(`Viewing ${product.product_id}`)}>
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                {product.subscription_status && product.subscription_status !== 'active' && (
+                                  <DropdownMenuItem onClick={() => handleSubscriptionAction('activate', product.product_id)}>
+                                    <Play className="w-4 h-4 mr-2" />
+                                    Activate
+                                  </DropdownMenuItem>
+                                )}
+                                {product.subscription_status === 'active' && (
+                                  <DropdownMenuItem onClick={() => handleSubscriptionAction('suspend', product.product_id)}>
+                                    <Pause className="w-4 h-4 mr-2" />
+                                    Suspend
+                                  </DropdownMenuItem>
+                                )}
+                                {product.subscription_status && (
+                                  <DropdownMenuItem onClick={() => handleSubscriptionAction('extend', product.product_id)}>
+                                    <Clock className="w-4 h-4 mr-2" />
+                                    Extend 30 Days
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
-
-              {filteredProducts.length === 0 && (
-                <div className="text-center py-12">
-                  <Cpu className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No devices found matching your criteria</p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </motion.div>

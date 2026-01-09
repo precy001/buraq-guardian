@@ -6,7 +6,8 @@ import { useAuth } from '@/context/AuthContext';
 import { SubscriptionPanel } from '@/components/SubscriptionPanel';
 import { PaymentPanel } from '@/components/PaymentPanel';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Waves, LogOut, User, Settings, AlertTriangle } from 'lucide-react';
+import { Logo } from '@/components/Logo';
+import { LogOut, User, Settings, AlertTriangle } from 'lucide-react';
 
 export default function UserDashboard() {
   const { user, subscription, logout } = useAuth();
@@ -24,10 +25,7 @@ export default function UserDashboard() {
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-water flex items-center justify-center shadow-water">
-                <Waves className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-heading font-bold text-foreground">The Buraq</span>
+              <Logo size="md" />
             </Link>
             
             <div className="flex items-center gap-4">

@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Waves, Shield, Zap, LifeBuoy, ChevronRight, Play, Users, Award, Clock } from 'lucide-react';
+import { Logo } from '@/components/Logo';
+import { Shield, Zap, LifeBuoy, ChevronRight, Play, Clock } from 'lucide-react';
 
 const features = [
   {
@@ -44,10 +45,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-water flex items-center justify-center shadow-water">
-                <Waves className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-heading font-bold text-foreground">The Buraq</span>
+              <Logo size="md" />
             </Link>
             
             <div className="flex items-center gap-4">
@@ -207,14 +205,9 @@ export default function LandingPage() {
       <footer className="py-12 px-4 sm:px-6 border-t border-border">
         <div className="container mx-auto">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg gradient-water flex items-center justify-center">
-                <Waves className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="font-heading font-semibold text-foreground">The Buraq</span>
-            </div>
+            <Logo size="sm" />
             <p className="text-sm text-muted-foreground">
-              © 2024 The Buraq. All rights reserved.
+              © 2024 SCHIPHA. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-primary transition-colors">
