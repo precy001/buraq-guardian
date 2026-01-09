@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Get Paystack secret key from environment
-$paystackSecretKey = getenv('PAYSTACK_SECRET_KEY');
+$paystackSecretKey = "sk_test_61bfc65b453de719dbe11751047a7d69a1fe8725";
 if (!$paystackSecretKey) {
     http_response_code(500);
     jsonResponse(false, 'Payment configuration error');

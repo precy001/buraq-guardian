@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Waves, Shield, Zap, LifeBuoy, ChevronRight, Play, Users, Award, Clock } from 'lucide-react';
+import Logo from '../assets/images/unnamed.jpg'
 
 const features = [
   {
@@ -47,7 +48,7 @@ export default function LandingPage() {
               <div className="w-10 h-10 rounded-xl gradient-water flex items-center justify-center shadow-water">
                 <Waves className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-heading font-bold text-foreground">The Buraq</span>
+              <span className="text-xl font-heading font-bold text-foreground">The Buraq </span>
             </Link>
             
             <div className="flex items-center gap-4">

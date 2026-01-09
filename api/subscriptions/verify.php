@@ -19,7 +19,7 @@ if (!in_array($_SERVER['REQUEST_METHOD'], ['GET', 'POST'])) {
 }
 
 // Get Paystack secret key from environment
-$paystackSecretKey = getenv('PAYSTACK_SECRET_KEY');
+$paystackSecretKey = "sk_test_61bfc65b453de719dbe11751047a7d69a1fe8725";
 if (!$paystackSecretKey) {
     http_response_code(500);
     jsonResponse(false, 'Payment configuration error');
@@ -138,17 +138,34 @@ try {
     $pdo->beginTransaction();
 
     try {
-        // Expire any existing active subscriptions for this product
-        $stmt = $pdo->prepare("
-            UPDATE subscriptions 
-            SET status = 'expired' 
-            WHERE product_id = ? AND status = 'active'
-        ");
-        $stmt->execute([$productId]);
+        // Check for an existing active subscription
+$stmt = $pdo->prepare("
+    SELECT id, end_date 
+    FROM subscriptions 
+    WHERE product_id = ? AND status = 'active'
+    ORDER BY end_date DESC
+    LIMIT 1
+");
+$stmt->execute([$productId]);
+$activeSubscription = $stmt->fetch();
 
-        // Calculate subscription dates
-        $startDate = date('Y-m-d H:i:s');
-        $endDate = date('Y-m-d H:i:s', strtotime("+{$durationDays} days"));
+if ($activeSubscription) {
+    // APPEND: start from existing end_date
+    $startDate = $activeSubscription['end_date'];
+    $endDate   = date('Y-m-d H:i:s', strtotime($startDate . " +{$durationDays} days"));
+
+    // Mark old record as extended (optional but clean)
+    $stmt = $pdo->prepare("
+        UPDATE subscriptions 
+        SET status = 'expired'
+        WHERE id = ?
+    ");
+    $stmt->execute([$activeSubscription['id']]);
+} else {
+    // NEW subscription
+    $startDate = date('Y-m-d H:i:s');
+    $endDate   = date('Y-m-d H:i:s', strtotime("+{$durationDays} days"));
+}
 
         // Insert new subscription record
         $stmt = $pdo->prepare("
@@ -179,7 +196,10 @@ try {
         $pdo->commit();
 
         // Calculate days remaining for response
-        $daysRemaining = $durationDays;
+       $daysRemaining = ceil(
+            (strtotime($endDate) - time()) / 86400
+        );
+
 
         jsonResponse(true, 'Payment verified and subscription activated', [
             'subscription' => [
