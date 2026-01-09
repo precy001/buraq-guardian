@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { Waves, Lock, Mail, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Logo } from '@/components/Logo';
+import { Lock, Mail, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -80,10 +81,9 @@ export default function AdminLoginPage() {
       >
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl gradient-water flex items-center justify-center shadow-water">
-              <Waves className="w-6 h-6 text-primary-foreground" />
+            <div className="bg-white rounded-lg p-2">
+              <Logo size="lg" />
             </div>
-            <span className="text-2xl font-heading font-bold text-primary-foreground">The Buraq</span>
           </Link>
         </div>
 
@@ -107,7 +107,7 @@ export default function AdminLoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@theburaq.com"
+                    placeholder="admin@schipha.com"
                     className="pl-10"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
