@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Waves, Shield, Zap, LifeBuoy } from 'lucide-react';
+import { Shield, Zap, LifeBuoy, Waves } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Logo } from '@/components/Logo';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -30,10 +31,9 @@ export function AuthLayout({ children, title, subtitle, showBackLink = true }: A
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div>
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl gradient-water flex items-center justify-center shadow-water">
-                <Waves className="w-6 h-6 text-white" />
+              <div className="bg-white rounded-lg p-2">
+                <Logo size="lg" />
               </div>
-              <span className="text-2xl font-heading font-bold text-white">The Buraq</span>
             </Link>
           </div>
           
@@ -77,7 +77,7 @@ export function AuthLayout({ children, title, subtitle, showBackLink = true }: A
           </div>
           
           <p className="text-sm text-white/60">
-            © 2024 The Buraq. All rights reserved.
+            © 2024 SCHIPHA. All rights reserved.
           </p>
         </div>
       </div>
@@ -86,10 +86,7 @@ export function AuthLayout({ children, title, subtitle, showBackLink = true }: A
       <div className="flex-1 flex flex-col bg-background">
         <div className="p-6 flex items-center justify-between lg:justify-end">
           <Link to="/" className="flex items-center gap-3 lg:hidden">
-            <div className="w-10 h-10 rounded-xl gradient-water flex items-center justify-center shadow-water">
-              <Waves className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-heading font-bold text-foreground">The Buraq</span>
+            <Logo size="md" />
           </Link>
           <ThemeToggle />
         </div>

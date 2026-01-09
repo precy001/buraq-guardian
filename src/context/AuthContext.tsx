@@ -21,15 +21,27 @@ export interface Subscription {
   totalDays: number;
 }
 
+interface AdminSession {
+  token: string;
+  admin: {
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+  };
+}
+
 interface AuthContextType {
   user: User | null;
   subscription: Subscription | null;
+  adminSession: AdminSession | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isLoading: boolean;
   login: (productId: string, password: string) => Promise<{ success: boolean; error?: string }>;
   adminLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  adminLogout: () => Promise<void>;
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
   refreshSubscription: () => Promise<void>;
 }
@@ -47,6 +59,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_BASE_URL = 'http://localhost/buraq-guardian/api';
 const STORAGE_KEY = 'buraq_auth_session';
+const ADMIN_STORAGE_KEY = 'buraq_admin_session';
 
 // Helper to load session from localStorage
 const loadSession = (): { user: User | null; subscription: Subscription | null } => {
@@ -62,6 +75,19 @@ const loadSession = (): { user: User | null; subscription: Subscription | null }
   return { user: null, subscription: null };
 };
 
+// Helper to load admin session from localStorage
+const loadAdminSession = (): AdminSession | null => {
+  try {
+    const stored = localStorage.getItem(ADMIN_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Failed to load admin session:', e);
+  }
+  return null;
+};
+
 // Helper to save session to localStorage
 const saveSession = (user: User | null, subscription: Subscription | null) => {
   if (user) {
@@ -71,27 +97,63 @@ const saveSession = (user: User | null, subscription: Subscription | null) => {
   }
 };
 
+// Helper to save admin session to localStorage
+const saveAdminSession = (session: AdminSession | null) => {
+  if (session) {
+    localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(session));
+  } else {
+    localStorage.removeItem(ADMIN_STORAGE_KEY);
+  }
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Restore session on mount
   useEffect(() => {
     const { user: storedUser, subscription: storedSubscription } = loadSession();
+    const storedAdminSession = loadAdminSession();
+    
     if (storedUser) {
       setUser(storedUser);
       setSubscription(storedSubscription);
     }
+    
+    if (storedAdminSession) {
+      setAdminSession(storedAdminSession);
+      // Set user for admin
+      setUser({
+        id: String(storedAdminSession.admin.id),
+        productId: 'ADMIN',
+        fullName: storedAdminSession.admin.username,
+        email: storedAdminSession.admin.email,
+        phone: '',
+        address: '',
+        role: 'admin',
+      });
+    }
+    
     setIsLoading(false);
   }, []);
 
   // Persist session on changes
   useEffect(() => {
     if (!isLoading) {
-      saveSession(user, subscription);
+      if (user?.role !== 'admin') {
+        saveSession(user, subscription);
+      }
     }
   }, [user, subscription, isLoading]);
+
+  // Persist admin session on changes
+  useEffect(() => {
+    if (!isLoading) {
+      saveAdminSession(adminSession);
+    }
+  }, [adminSession, isLoading]);
 
   const login = useCallback(async (productId: string, password: string) => {
     try {
@@ -146,21 +208,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const adminLogin = useCallback(async (email: string, password: string) => {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    if (email && password.length >= 6) {
-      setUser({
-        id: 'admin-1',
-        productId: 'ADMIN',
-        fullName: 'Admin User',
-        email,
-        phone: '',
-        address: '',
-        role: 'admin',
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/login.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
       });
-      return { success: true };
+
+      const data = await response.json();
+
+      if (data.success) {
+        const session: AdminSession = {
+          token: data.data.token,
+          admin: data.data.admin,
+        };
+        
+        setAdminSession(session);
+        setUser({
+          id: String(data.data.admin.id),
+          productId: 'ADMIN',
+          fullName: data.data.admin.username,
+          email: data.data.admin.email,
+          phone: '',
+          address: '',
+          role: 'admin',
+        });
+        
+        return { success: true };
+      }
+      return { success: false, error: data.message || 'Login failed' };
+    } catch (error) {
+      return { success: false, error: 'Network error. Please check your connection.' };
     }
-    return { success: false, error: 'Invalid credentials' };
   }, []);
 
   const register = useCallback(async (data: RegisterData) => {
@@ -195,7 +279,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setUser(null);
     setSubscription(null);
+    setAdminSession(null);
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(ADMIN_STORAGE_KEY);
   }, []);
+
+  const adminLogout = useCallback(async () => {
+    if (adminSession?.token) {
+      try {
+        await fetch(`${API_BASE_URL}/admin/logout.php`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminSession.token}`,
+          },
+        });
+      } catch (error) {
+        console.error('Admin logout error:', error);
+      }
+    }
+    
+    setUser(null);
+    setAdminSession(null);
+    localStorage.removeItem(ADMIN_STORAGE_KEY);
+  }, [adminSession?.token]);
 
   const refreshSubscription = useCallback(async () => {
     if (!user?.productId) return;
@@ -229,12 +336,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         subscription,
+        adminSession,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
         isLoading,
         login,
         adminLogin,
         logout,
+        adminLogout,
         register,
         refreshSubscription,
       }}
