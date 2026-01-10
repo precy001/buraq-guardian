@@ -110,11 +110,16 @@ export function SubscriptionPanel({ subscription, productId }: SubscriptionPanel
 
               {!isActive && (
                 <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20">
-                  <p className="text-sm text-destructive font-medium">
+                  <p className="text-sm text-destructive font-medium mb-2">
                     {isSuspended
-                      ? '⚠️ Your subscription is currently suspended by an administrator. Device protection is temporarily disabled. Please contact support.'
+                      ? '⚠️ Your subscription is currently suspended by an administrator. Device protection is temporarily disabled.'
                       : '⚠️ Your device protection is currently inactive. Please renew your subscription to restore full functionality.'}
                   </p>
+                  {isSuspended && (
+                    <p className="text-sm text-muted-foreground">
+                      Contact support: <a href="tel:+2349125402776" className="text-primary hover:underline">+234 912 540 2776</a>, <a href="tel:+2347048514845" className="text-primary hover:underline">+234 704 851 4845</a> or <a href="mailto:schiiphahealth@gmail.com" className="text-primary hover:underline">schiiphahealth@gmail.com</a>
+                    </p>
+                  )}
                 </div>
               )}
             </>

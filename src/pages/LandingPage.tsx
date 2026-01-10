@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
-import { Shield, Zap, LifeBuoy, ChevronRight, Play, Clock } from 'lucide-react';
+import { Shield, Zap, LifeBuoy, ChevronRight, Play, Clock, Phone, Mail } from 'lucide-react';
 
 const features = [
   {
@@ -201,19 +201,49 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 border-t border-border">
+      {/* Contact Section */}
+      <section className="py-16 px-4 sm:px-6 bg-muted/30">
         <div className="container mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-foreground mb-3">
+              Contact Us
+            </h2>
+            <p className="text-muted-foreground">
+              Have questions? Reach out to our team for support.
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10">
+            <a href="tel:+2349125402776" className="flex items-center gap-3 text-foreground hover:text-primary transition-colors">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Phone className="w-5 h-5 text-primary" />
+              </div>
+              <span className="font-medium">+234 912 540 2776</span>
+            </a>
+            <a href="tel:+2347048514845" className="flex items-center gap-3 text-foreground hover:text-primary transition-colors">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Phone className="w-5 h-5 text-primary" />
+              </div>
+              <span className="font-medium">+234 704 851 4845</span>
+            </a>
+            <a href="mailto:schiiphahealth@gmail.com" className="flex items-center gap-3 text-foreground hover:text-primary transition-colors">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Mail className="w-5 h-5 text-primary" />
+              </div>
+              <span className="font-medium">schiiphahealth@gmail.com</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-8 px-4 sm:px-6 border-t border-border">
+        <div className="container mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Logo size="sm" />
             <p className="text-sm text-muted-foreground">
               © 2024 SCHIPHA. All rights reserved.
             </p>
-            <div className="flex items-center gap-6">
-              <Link to="/admin/login" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                Admin Portal
-              </Link>
-            </div>
           </div>
         </div>
       </footer>
