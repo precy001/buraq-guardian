@@ -13,6 +13,7 @@ interface SubscriptionPanelProps {
 
 export function SubscriptionPanel({ subscription, productId }: SubscriptionPanelProps) {
   const isActive = subscription?.status === 'active';
+  const isSuspended = subscription?.status === 'suspended';
   const isExpiringSoon = subscription ? subscription.daysRemaining <= 7 && subscription.daysRemaining > 0 : false;
 
   return (
@@ -23,7 +24,7 @@ export function SubscriptionPanel({ subscription, productId }: SubscriptionPanel
     >
       <Card variant="elevated" className={cn(
         'relative overflow-hidden',
-        isActive ? 'border-l-4 border-l-success' : 'border-l-4 border-l-destructive'
+        isActive ? 'border-l-4 border-l-success' : isSuspended ? 'border-l-4 border-l-warning' : 'border-l-4 border-l-destructive'
       )}>
         {isActive && (
           <div className="absolute top-0 right-0 w-32 h-32 gradient-water opacity-10 rounded-bl-full" />
@@ -110,7 +111,9 @@ export function SubscriptionPanel({ subscription, productId }: SubscriptionPanel
               {!isActive && (
                 <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20">
                   <p className="text-sm text-destructive font-medium">
-                    ⚠️ Your device protection is currently inactive. Please renew your subscription to restore full functionality.
+                    {isSuspended
+                      ? '⚠️ Your subscription is currently suspended by an administrator. Device protection is temporarily disabled. Please contact support.'
+                      : '⚠️ Your device protection is currently inactive. Please renew your subscription to restore full functionality.'}
                   </p>
                 </div>
               )}

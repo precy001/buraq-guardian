@@ -331,6 +331,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.productId]);
 
+  // Keep subscription status in sync with backend (e.g., admin suspensions)
+  useEffect(() => {
+    if (!isLoading && user?.role === 'user') {
+      refreshSubscription();
+    }
+  }, [isLoading, user?.role, user?.productId, refreshSubscription]);
+
   return (
     <AuthContext.Provider
       value={{
