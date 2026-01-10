@@ -1,5 +1,5 @@
 <?php
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: https://schiipha.com.ng");
 
 // Allow cookies / authorization headers if needed later
 header("Access-Control-Allow-Credentials: true");

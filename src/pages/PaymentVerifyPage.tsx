@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Loader2, Home } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
-const API_BASE_URL = 'http://localhost/buraq-guardian/api';
+const API_BASE_URL = 'https://schiipha-buraq.com.ng/api';
 
 type VerificationStatus = 'verifying' | 'success' | 'failed';
 

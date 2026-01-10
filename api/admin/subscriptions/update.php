@@ -166,7 +166,7 @@ try {
         $pdo->rollBack();
     }
     http_response_code(500);
-    jsonResponse(false, "Database error occurred");
+    jsonResponse(false, "DB Error: " . $e->getMessage());
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

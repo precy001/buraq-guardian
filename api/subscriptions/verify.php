@@ -2,30 +2,40 @@
 /**
  * Paystack Payment Verification Endpoint
  * 
- * Verifies payment with Paystack and creates subscription record.
- * This is the CRITICAL endpoint - only verified payments create subscriptions.
- * 
- * GET /api/subscriptions/verify.php?reference=XXXX
+ * Verifies payment with Paystack and STACKS subscription duration.
+ * Idempotent, retry-safe, production-ready.
  */
 
 require_once __DIR__ . '/../middleware/cors.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../utils/response.php';
 
-// Accept both GET and POST for flexibility
+/**
+ * --------------------------------------------------
+ * METHOD CHECK
+ * --------------------------------------------------
+ */
 if (!in_array($_SERVER['REQUEST_METHOD'], ['GET', 'POST'])) {
     http_response_code(405);
     jsonResponse(false, 'Method not allowed');
 }
 
-// Get Paystack secret key from environment
+/**
+ * --------------------------------------------------
+ * PAYSTACK CONFIG
+ * --------------------------------------------------
+ */
 $paystackSecretKey = "sk_test_61bfc65b453de719dbe11751047a7d69a1fe8725";
 if (!$paystackSecretKey) {
     http_response_code(500);
     jsonResponse(false, 'Payment configuration error');
 }
 
-// Get reference from query string or POST body
+/**
+ * --------------------------------------------------
+ * GET PAYMENT REFERENCE
+ * --------------------------------------------------
+ */
 $reference = $_GET['reference'] ?? null;
 
 if (!$reference && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -38,7 +48,6 @@ if (!$reference) {
     jsonResponse(false, 'Payment reference is required');
 }
 
-// Sanitize reference
 $reference = trim($reference);
 if (!preg_match('/^[a-zA-Z0-9_-]+$/', $reference)) {
     http_response_code(400);
@@ -46,44 +55,43 @@ if (!preg_match('/^[a-zA-Z0-9_-]+$/', $reference)) {
 }
 
 try {
-    // IDEMPOTENCY CHECK: Prevent duplicate transactions
-    // Check if this reference has already been processed
+
+    /**
+     * --------------------------------------------------
+     * IDEMPOTENCY CHECK (PAYMENT LEVEL)
+     * --------------------------------------------------
+     */
     $stmt = $pdo->prepare("
-        SELECT id, product_id, plan_name, status 
-        FROM subscriptions 
+        SELECT id 
+        FROM subscription_payments 
         WHERE payment_reference = ?
     ");
     $stmt->execute([$reference]);
-    $existingSubscription = $stmt->fetch();
 
-    if ($existingSubscription) {
-        // Already processed - return existing subscription info
-        jsonResponse(true, 'Payment already verified', [
-            'subscription_id' => $existingSubscription['id'],
-            'product_id' => $existingSubscription['product_id'],
-            'plan_name' => $existingSubscription['plan_name'],
-            'status' => $existingSubscription['status'],
+    if ($stmt->fetch()) {
+        jsonResponse(true, 'Payment already processed', [
             'already_processed' => true
         ]);
     }
 
-    // Verify payment with Paystack
-    $paystackUrl = 'https://api.paystack.co/transaction/verify/' . urlencode($reference);
-
-    $ch = curl_init($paystackUrl);
+    /**
+     * --------------------------------------------------
+     * VERIFY WITH PAYSTACK
+     * --------------------------------------------------
+     */
+    $ch = curl_init('https://api.paystack.co/transaction/verify/' . urlencode($reference));
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => [
             'Authorization: Bearer ' . $paystackSecretKey,
-            'Content-Type: application/json',
-            'Cache-Control: no-cache'
+            'Content-Type: application/json'
         ],
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_TIMEOUT => 30
     ]);
 
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $response  = curl_exec($ch);
+    $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
     curl_close($ch);
 
@@ -94,25 +102,31 @@ try {
 
     $result = json_decode($response, true);
 
-    if ($httpCode !== 200 || !$result['status']) {
+    if ($httpCode !== 200 || empty($result['status'])) {
         http_response_code(400);
         jsonResponse(false, $result['message'] ?? 'Payment verification failed');
     }
 
-    $transactionData = $result['data'];
+    $transaction = $result['data'];
 
-    // CRITICAL: Verify payment status is 'success'
-    if ($transactionData['status'] !== 'success') {
+    if ($transaction['status'] !== 'success') {
         http_response_code(400);
-        jsonResponse(false, 'Payment was not successful', [
-            'payment_status' => $transactionData['status']
-        ]);
+        jsonResponse(false, 'Payment not successful');
     }
 
-    // Extract metadata
-    $metadata = $transactionData['metadata'] ?? [];
-    $productId = $metadata['product_id'] ?? null;
-    $planName = $metadata['plan_name'] ?? null;
+    if ($transaction['currency'] !== 'NGN') {
+        http_response_code(400);
+        jsonResponse(false, 'Invalid payment currency');
+    }
+
+    /**
+     * --------------------------------------------------
+     * METADATA VALIDATION
+     * --------------------------------------------------
+     */
+    $metadata     = $transaction['metadata'] ?? [];
+    $productId    = $metadata['product_id'] ?? null;
+    $planName     = $metadata['plan_name'] ?? null;
     $durationDays = (int) ($metadata['duration_days'] ?? 30);
 
     if (!$productId || !$planName) {
@@ -120,115 +134,136 @@ try {
         jsonResponse(false, 'Invalid payment metadata');
     }
 
-    // Verify the product exists
+    /**
+     * --------------------------------------------------
+     * VERIFY PRODUCT EXISTS
+     * --------------------------------------------------
+     */
     $stmt = $pdo->prepare("SELECT id FROM users WHERE product_id = ?");
     $stmt->execute([$productId]);
+
     if (!$stmt->fetch()) {
         http_response_code(404);
         jsonResponse(false, 'Product not found');
     }
 
-    // Verify currency (should be NGN)
-    if ($transactionData['currency'] !== 'NGN') {
-        http_response_code(400);
-        jsonResponse(false, 'Invalid payment currency');
-    }
-
-    // Begin database transaction for atomic operations
+    /**
+     * --------------------------------------------------
+     * ATOMIC DATABASE TRANSACTION
+     * --------------------------------------------------
+     */
     $pdo->beginTransaction();
 
-    try {
-        // Check for an existing active subscription
-$stmt = $pdo->prepare("
-    SELECT id, end_date 
-    FROM subscriptions 
-    WHERE product_id = ? AND status = 'active'
-    ORDER BY end_date DESC
-    LIMIT 1
-");
-$stmt->execute([$productId]);
-$activeSubscription = $stmt->fetch();
-
-if ($activeSubscription) {
-    // APPEND: start from existing end_date
-    $startDate = $activeSubscription['end_date'];
-    $endDate   = date('Y-m-d H:i:s', strtotime($startDate . " +{$durationDays} days"));
-
-    // Mark old record as extended (optional but clean)
+    /**
+     * 1. RECORD PAYMENT (IDEMPOTENCY GUARANTEE)
+     */
     $stmt = $pdo->prepare("
-        UPDATE subscriptions 
-        SET status = 'expired'
-        WHERE id = ?
+        INSERT INTO subscription_payments (
+            payment_reference,
+            product_id,
+            amount_paid,
+            currency,
+            paid_at
+        ) VALUES (?, ?, ?, ?, ?)
     ");
-    $stmt->execute([$activeSubscription['id']]);
-} else {
-    // NEW subscription
-    $startDate = date('Y-m-d H:i:s');
-    $endDate   = date('Y-m-d H:i:s', strtotime("+{$durationDays} days"));
-}
+    $stmt->execute([
+        $reference,
+        $productId,
+        $transaction['amount'],
+        $transaction['currency'],
+        $transaction['paid_at']
+    ]);
 
-        // Insert new subscription record
+    /**
+     * 2. STACK SUBSCRIPTION
+     */
+    $stmt = $pdo->prepare("
+        SELECT id, start_date, end_date 
+        FROM subscriptions
+        WHERE product_id = ? AND status = 'active'
+        LIMIT 1
+        FOR UPDATE
+    ");
+    $stmt->execute([$productId]);
+    $activeSubscription = $stmt->fetch();
+
+    if ($activeSubscription) {
+        // Extend existing subscription
+        $startDate = $activeSubscription['start_date'];
+        $endDate   = date(
+            'Y-m-d H:i:s',
+            strtotime($activeSubscription['end_date'] . " +{$durationDays} days")
+        );
+
+        $stmt = $pdo->prepare("
+            UPDATE subscriptions
+            SET end_date = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->execute([$endDate, $activeSubscription['id']]);
+
+        $subscriptionId = $activeSubscription['id'];
+
+    } else {
+        // Create new subscription
+        $startDate = date('Y-m-d H:i:s');
+        $endDate   = date('Y-m-d H:i:s', strtotime("+{$durationDays} days"));
+
         $stmt = $pdo->prepare("
             INSERT INTO subscriptions (
-                product_id, 
-                plan_name, 
-                start_date, 
-                end_date, 
-                status, 
-                payment_reference,
+                product_id,
+                plan_name,
+                start_date,
+                end_date,
+                status,
                 amount_paid,
                 created_at
-            ) VALUES (?, ?, ?, ?, 'active', ?, ?, NOW())
+            ) VALUES (?, ?, ?, ?, 'active', ?, NOW())
         ");
-        
         $stmt->execute([
             $productId,
             $planName,
             $startDate,
             $endDate,
-            $reference,
-            $transactionData['amount'] // Amount in kobo
+            $transaction['amount']
         ]);
 
         $subscriptionId = $pdo->lastInsertId();
-
-        // Commit transaction
-        $pdo->commit();
-
-        // Calculate days remaining for response
-       $daysRemaining = ceil(
-            (strtotime($endDate) - time()) / 86400
-        );
-
-
-        jsonResponse(true, 'Payment verified and subscription activated', [
-            'subscription' => [
-                'id' => $subscriptionId,
-                'product_id' => $productId,
-                'plan_name' => $planName,
-                'start_date' => $startDate,
-                'end_date' => $endDate,
-                'status' => 'active',
-                'days_remaining' => $daysRemaining,
-                'total_days' => $durationDays
-            ],
-            'payment' => [
-                'reference' => $reference,
-                'amount' => $transactionData['amount'],
-                'currency' => $transactionData['currency'],
-                'paid_at' => $transactionData['paid_at'] ?? null
-            ]
-        ]);
-
-    } catch (Exception $e) {
-        $pdo->rollBack();
-        throw $e;
     }
 
+    $pdo->commit();
+
+    /**
+     * --------------------------------------------------
+     * RESPONSE
+     * --------------------------------------------------
+     */
+    $daysRemaining = ceil((strtotime($endDate) - time()) / 86400);
+
+    jsonResponse(true, 'Payment verified and subscription updated', [
+        'subscription' => [
+            'id' => $subscriptionId,
+            'product_id' => $productId,
+            'plan_name' => $planName,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'days_remaining' => $daysRemaining
+        ],
+        'payment' => [
+            'reference' => $reference,
+            'amount' => $transaction['amount'],
+            'currency' => $transaction['currency'],
+            'paid_at' => $transaction['paid_at']
+        ]
+    ]);
+
 } catch (PDOException $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     http_response_code(500);
-    jsonResponse(false, 'Database error occurred');
+    jsonResponse(false, 'Database error');
 } catch (Exception $e) {
     http_response_code(500);
-    jsonResponse(false, 'An unexpected error occurred');
+    jsonResponse(false, 'Unexpected server error');
 }

@@ -85,9 +85,9 @@ try {
     
     // Calculate revenue (this month)
     $stmt = $pdo->query("
-        SELECT COALESCE(SUM(amount), 0) as total 
+        SELECT COALESCE(SUM(amount_paid), 0) as total 
         FROM subscriptions 
-        WHERE payment_status = 'paid' 
+        WHERE status = 'active' 
         AND MONTH(created_at) = MONTH(NOW()) 
         AND YEAR(created_at) = YEAR(NOW())
     ");

@@ -29,17 +29,27 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-const API_BASE_URL = 'http://localhost/buraq-guardian/api';
+const API_BASE_URL = 'https://schiipha-buraq.com.ng/api';
 
 interface OverviewStats {
-  total_products: number;
-  registered_products: number;
-  unregistered_products: number;
-  active_subscriptions: number;
-  expired_subscriptions: number;
-  suspended_subscriptions: number;
-  total_users: number;
-  monthly_revenue: number;
+  statistics: {
+    products: {
+      total: number;
+      registered: number;
+      unregistered: number;
+    };
+    subscriptions: {
+      active: number;
+      expired: number;
+      suspended: number;
+    };
+    users: {
+      total: number;
+    };
+    revenue: {
+      this_month: number;
+    };
+  };
 }
 
 interface Product {
@@ -47,12 +57,16 @@ interface Product {
   product_id: string;
   is_registered: boolean;
   created_at: string;
-  user_name?: string;
-  user_email?: string;
-  subscription_status?: 'active' | 'expired' | 'suspended' | null;
-  plan_name?: string;
-  expiry_date?: string;
-  days_remaining?: number;
+  // Nested user object from your backend array_map
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  } | null;
+  subscription_status: 'active' | 'expired' | 'suspended' | null;
+  plan_name: string | null;
+  expiry_date: string | null;
+  days_remaining: number | null;
 }
 
 type FilterType = 'all' | 'active' | 'expired' | 'suspended' | 'expiring-soon' | 'registered' | 'unregistered';
@@ -193,11 +207,31 @@ export default function AdminDashboard() {
   });
 
   const statsCards = [
-    { label: 'Total Devices', value: stats?.total_products || 0, icon: Cpu, color: 'text-primary' },
-    { label: 'Active Subscriptions', value: stats?.active_subscriptions || 0, icon: CreditCard, color: 'text-success' },
-    { label: 'Expired', value: stats?.expired_subscriptions || 0, icon: AlertTriangle, color: 'text-warning' },
-    { label: 'Total Users', value: stats?.total_users || 0, icon: Users, color: 'text-secondary' },
-  ];
+  { 
+    label: 'Total Devices', 
+    value: stats?.statistics.products.total || 0, 
+    icon: Cpu, 
+    color: 'text-primary' 
+  },
+  { 
+    label: 'Active Subscriptions', 
+    value: stats?.statistics.subscriptions.active || 0, 
+    icon: CreditCard, 
+    color: 'text-success' 
+  },
+  { 
+    label: 'Expired', 
+    value: stats?.statistics.subscriptions.expired || 0, 
+    icon: AlertTriangle, 
+    color: 'text-warning' 
+  },
+  { 
+    label: 'Total Users', 
+    value: stats?.statistics.users.total || 0, 
+    icon: Users, 
+    color: 'text-secondary' 
+  },
+];
 
   return (
     <div className="min-h-screen bg-background">
@@ -364,14 +398,14 @@ export default function AdminDashboard() {
                         <TableRow key={product.id} className="hover:bg-muted/30">
                           <TableCell className="font-mono font-medium">{product.product_id}</TableCell>
                           <TableCell>
-                            {product.is_registered && product.user_name ? (
-                              <div>
-                                <p className="font-medium">{product.user_name}</p>
-                                <p className="text-sm text-muted-foreground">{product.user_email}</p>
-                              </div>
-                            ) : (
-                              <Badge variant="outline">Unregistered</Badge>
-                            )}
+                            {product.is_registered && product.user ? (
+                            <div>
+                              <p className="font-medium">{product.user.name}</p>
+                              <p className="text-sm text-muted-foreground">{product.user.email}</p>
+                            </div>
+                          ) : (
+                            <Badge variant="outline">Unregistered</Badge>
+                          )}
                           </TableCell>
                           <TableCell>{product.plan_name || '-'}</TableCell>
                           <TableCell>

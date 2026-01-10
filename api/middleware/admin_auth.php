@@ -23,14 +23,14 @@ function validateAdminToken() {
     
     try {
         // Validate token against admin_sessions table
-        $stmt = $pdo->prepare("
-            SELECT as.*, a.id as admin_id, a.username, a.email, a.full_name
-            FROM admin_sessions as
-            JOIN admins a ON as.admin_id = a.id
-            WHERE as.token = :token 
-            AND as.expires_at > NOW()
-            AND a.is_active = 1
-        ");
+       $stmt = $pdo->prepare("
+        SELECT sess.*, a.id as admin_id, a.username, a.email, a.full_name
+        FROM admin_sessions sess
+        JOIN admins a ON sess.admin_id = a.id
+        WHERE sess.token = :token 
+        AND sess.expires_at > NOW()
+        AND a.is_active = 1
+    ");
         $stmt->execute(['token' => $token]);
         $session = $stmt->fetch();
         

@@ -57,7 +57,7 @@ const plans: Plan[] = [
   },
 ];
 
-const API_BASE_URL = 'http://localhost/buraq-guardian/api';
+const API_BASE_URL = 'https://schiipha-buraq.com.ng/api';
 
 interface PaymentPanelProps {
   currentPlanId?: string;

@@ -26,22 +26,24 @@ try {
     }
     
     // Validate required fields
-    $username = trim($input['username'] ?? '');
-    $password = $input['password'] ?? '';
-    
-    if (empty($username) || empty($password)) {
-        http_response_code(400);
-        jsonResponse(false, "Username and password are required");
+    $identifier = trim($input['email'] ?? $input['username'] ?? '');
+    $password   = $input['password'] ?? '';
+
+    if (empty($identifier) || empty($password)) {
+    http_response_code(400);
+    jsonResponse(false, "Email/Username and password are required");
     }
+    
     
     // Find admin by username or email
     $stmt = $pdo->prepare("
-        SELECT id, username, email, full_name, password_hash, is_active
-        FROM admins
-        WHERE (username = :username OR email = :username)
-        LIMIT 1
+    SELECT id, username, email, full_name, password_hash, is_active
+    FROM admins
+    WHERE username = :identifier OR email = :identifier
+    LIMIT 1
     ");
-    $stmt->execute(['username' => $username]);
+    $stmt->execute(['identifier' => $identifier]);
+
     $admin = $stmt->fetch();
     
     // Verify credentials
