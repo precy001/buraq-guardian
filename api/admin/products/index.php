@@ -43,6 +43,7 @@ try {
      */
     $filter = $_GET['filter'] ?? 'all';
     $search = trim($_GET['search'] ?? '');
+    $subscriptionStatus = strtolower(trim($_GET['subscription_status'] ?? 'all')); // all, active, expired, suspended, none
     $sortBy = $_GET['sort_by'] ?? 'created_at';
     $sortOrder = strtoupper($_GET['sort_order'] ?? 'DESC');
 
@@ -75,10 +76,24 @@ try {
     }
 
     if ($search !== '') {
-        $conditions[] = 'p.product_id LIKE :search';
+        $conditions[] = '(p.product_id LIKE :search OR u.full_name LIKE :search OR u.email LIKE :search)';
         $params['search'] = "%{$search}%";
     }
 
+    // Subscription status filter (matches current subscription row)
+    $allowedSubStatuses = ['all', 'active', 'expired', 'suspended', 'none'];
+    if (!in_array($subscriptionStatus, $allowedSubStatuses)) {
+        $subscriptionStatus = 'all';
+    }
+
+    if ($subscriptionStatus !== 'all') {
+        if ($subscriptionStatus === 'none') {
+            $conditions[] = 's.id IS NULL';
+        } else {
+            $conditions[] = 's.status = :subscription_status';
+            $params['subscription_status'] = $subscriptionStatus;
+        }
+    }
     $whereSql = '';
     if (!empty($conditions)) {
         $whereSql = 'WHERE ' . implode(' AND ', $conditions);
@@ -92,6 +107,23 @@ try {
     $countSql = "
         SELECT COUNT(*) AS total
         FROM products p
+        LEFT JOIN users u 
+            ON p.product_id = u.product_id
+        LEFT JOIN subscriptions s 
+            ON s.id = (
+                SELECT s2.id
+                FROM subscriptions s2
+                WHERE s2.product_id = p.product_id
+                ORDER BY 
+                    CASE 
+                        WHEN s2.status = 'active' AND s2.end_date > NOW() THEN 1
+                        WHEN s2.status = 'suspended' AND s2.end_date > NOW() THEN 2
+                        ELSE 3
+                    END,
+                    s2.end_date DESC,
+                    s2.created_at DESC
+                LIMIT 1
+            )
         {$whereSql}
     ";
 
@@ -112,13 +144,25 @@ try {
             s.status AS subscription_status,
             s.plan_name,
             s.end_date AS expiry_date,
-            DATEDIFF(s.end_date, NOW()) AS days_remaining
+            GREATEST(DATEDIFF(s.end_date, NOW()), 0) AS days_remaining
         FROM products p
         LEFT JOIN users u 
             ON p.product_id = u.product_id
         LEFT JOIN subscriptions s 
-            ON p.product_id = s.product_id
-           AND s.status = 'active'
+            ON s.id = (
+                SELECT s2.id
+                FROM subscriptions s2
+                WHERE s2.product_id = p.product_id
+                ORDER BY 
+                    CASE 
+                        WHEN s2.status = 'active' AND s2.end_date > NOW() THEN 1
+                        WHEN s2.status = 'suspended' AND s2.end_date > NOW() THEN 2
+                        ELSE 3
+                    END,
+                    s2.end_date DESC,
+                    s2.created_at DESC
+                LIMIT 1
+            )
         {$whereSql}
         ORDER BY p.{$sortBy} {$sortOrder}
         LIMIT :limit OFFSET :offset

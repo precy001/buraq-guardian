@@ -31,7 +31,14 @@ $stmt = $pdo->prepare("
            s.start_date,
            s.end_date
     FROM users u
-    LEFT JOIN subscriptions s ON u.product_id = s.product_id
+    LEFT JOIN subscriptions s 
+        ON s.id = (
+            SELECT s2.id
+            FROM subscriptions s2
+            WHERE s2.product_id = u.product_id
+            ORDER BY s2.created_at DESC
+            LIMIT 1
+        )
     WHERE u.product_id = ?
 ");
 $stmt->execute([$product_id]);
@@ -52,13 +59,21 @@ if ($user['subscription_id']) {
     $totalDays = max(1, ceil(($endDate - $startDate) / 86400));
     $daysRemaining = max(0, ceil(($endDate - $now) / 86400));
     
-    // Determine if subscription is active
-    $isActive = $user['subscription_status'] === 'active' && $endDate >= $now;
-    
+    // Determine subscription status
+    // - active: must be active AND not past end date
+    // - suspended: preserve admin suspension while still within end date
+    // - expired: anything else
+    $status = 'expired';
+    if ($user['subscription_status'] === 'suspended' && $endDate >= $now) {
+        $status = 'suspended';
+    } elseif ($user['subscription_status'] === 'active' && $endDate >= $now) {
+        $status = 'active';
+    }
+
     $subscriptionData = [
         'id' => $user['subscription_id'],
         'plan_name' => $user['plan_name'],
-        'status' => $isActive ? 'active' : 'expired',
+        'status' => $status,
         'start_date' => $user['start_date'],
         'end_date' => $user['end_date'],
         'days_remaining' => $daysRemaining,
