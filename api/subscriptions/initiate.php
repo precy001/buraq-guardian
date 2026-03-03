@@ -68,7 +68,7 @@ if ($durationDays < 1 || $durationDays > 365) {
 
 try {
     // Verify product exists and is registered
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE product_id = ?");
+    $stmt = $pdo->prepare("SELECT id FROM products WHERE product_id = ? AND is_registered = 1");
     $stmt->execute([$productId]);
     $product = $stmt->fetch();
 

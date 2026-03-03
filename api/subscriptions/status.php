@@ -30,7 +30,7 @@ $productId = trim($productId);
 
 try {
     // First verify the product exists
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE product_id = ?");
+    $stmt = $pdo->prepare("SELECT id FROM products WHERE product_id = ?");
     $stmt->execute([$productId]);
     
     if (!$stmt->fetch()) {
