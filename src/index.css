@@ -73,13 +73,6 @@
     --sidebar-ring: 199 89% 48%;
   }
 
-  @layer base {
-  #lovable-badge {
-    display: none !important;
-  }
-}
-
-
   .dark {
     /* Deep navy/charcoal backgrounds - not pure black */
     --background: 220 25% 10%;
