@@ -36,7 +36,14 @@ $stmt = $pdo->prepare("
             SELECT s2.id
             FROM subscriptions s2
             WHERE s2.product_id = u.product_id
-            ORDER BY s2.created_at DESC
+            ORDER BY 
+                CASE 
+                    WHEN s2.status = 'active' AND s2.end_date > NOW() THEN 1
+                    WHEN s2.status = 'suspended' AND s2.end_date > NOW() THEN 2
+                    ELSE 3
+                END,
+                s2.end_date DESC,
+                s2.created_at DESC
             LIMIT 1
         )
     WHERE u.product_id = ?

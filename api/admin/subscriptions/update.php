@@ -81,8 +81,8 @@ try {
             $newStatus = 'active';
             // If subscription was expired/suspended with past end date, extend it
             if (strtotime($subscription['end_date']) < time()) {
-                // Calculate days based on plan type and extend from now
-                $days = getPlanDays($subscription['plan_type']);
+                // Calculate days based on plan name and extend from now
+                $days = getPlanDays($subscription['plan_name']);
                 $newEndDate = date('Y-m-d H:i:s', strtotime("+{$days} days"));
             }
             break;
@@ -98,7 +98,7 @@ try {
             
         case 'extend':
             // Extend subscription by the plan duration
-            $days = (int)($input['days'] ?? getPlanDays($subscription['plan_type']));
+            $days = (int)($input['days'] ?? $input['extend_days'] ?? getPlanDays($subscription['plan_name']));
             if ($days < 1 || $days > 365) {
                 $pdo->rollBack();
                 http_response_code(400);

@@ -76,6 +76,11 @@ if (!preg_match('/^[a-zA-Z0-9_-]+$/', $reference)) {
  * --------------------------------------------------
  */
 $plans = [
+    'daily'   => ['duration_days' => 1],
+    'weekly'  => ['duration_days' => 7],
+    'monthly' => ['duration_days' => 30],
+    'yearly'  => ['duration_days' => 365],
+    // Legacy plan names
     'basic'   => ['duration_days' => 30],
     'premium' => ['duration_days' => 30],
     'annual'  => ['duration_days' => 365],
@@ -143,11 +148,12 @@ try {
     }
 
     // Look up duration server-side, never trust client value
-    if (!isset($plans[$planName])) {
+    $planKey = strtolower($planName);
+    if (!isset($plans[$planKey])) {
         http_response_code(400);
         jsonResponse(false, 'Invalid plan name in metadata');
     }
-    $durationDays = $plans[$planName]['duration_days'];
+    $durationDays = $plans[$planKey]['duration_days'];
 
     /**
      * --------------------------------------------------
