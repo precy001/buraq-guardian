@@ -1,0 +1,127 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Logo } from '@/components/Logo';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { Download, Smartphone, Shield, Bell, CheckCircle } from 'lucide-react';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+export default function InstallPage() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsInstalled(true);
+    }
+    setDeferredPrompt(null);
+  };
+
+  const benefits = [
+    { icon: Bell, title: 'Instant Drowning Alerts', desc: 'Receive loud alarm notifications even when the app is in background' },
+    { icon: Shield, title: 'Works Offline', desc: 'Core features available without internet connection' },
+    { icon: Smartphone, title: 'Native App Feel', desc: 'Runs like a native app on your home screen' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16">
+            <Link to="/" className="flex items-center gap-3">
+              <Logo size="md" />
+            </Link>
+            <ThemeToggle />
+          </div>
+        </div>
+      </nav>
+
+      <main className="container mx-auto px-4 sm:px-6 pt-32 pb-20">
+        <div className="max-w-lg mx-auto text-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="w-20 h-20 mx-auto rounded-2xl gradient-water flex items-center justify-center mb-6">
+              <Download className="w-10 h-10 text-primary-foreground" />
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl font-heading font-bold text-foreground mb-4">
+              Install Buraq App
+            </h1>
+            <p className="text-muted-foreground mb-8">
+              Install the app on your device for the best experience with real-time drowning alerts.
+            </p>
+
+            {isInstalled ? (
+              <div className="flex items-center justify-center gap-2 text-success mb-8">
+                <CheckCircle className="w-6 h-6" />
+                <span className="font-semibold text-lg">App is installed!</span>
+              </div>
+            ) : deferredPrompt ? (
+              <Button variant="hero" size="xl" onClick={handleInstall} className="mb-8">
+                <Download className="w-5 h-5 mr-2" />
+                Install Now
+              </Button>
+            ) : (
+              <Card variant="glass" className="mb-8">
+                <CardContent className="p-6 text-left text-sm text-muted-foreground">
+                  <p className="font-semibold text-foreground mb-2">How to install:</p>
+                  <ul className="space-y-2">
+                    <li><strong>iPhone/iPad:</strong> Tap Share → "Add to Home Screen"</li>
+                    <li><strong>Android:</strong> Tap the browser menu (⋮) → "Install app" or "Add to Home screen"</li>
+                    <li><strong>Desktop:</strong> Click the install icon in the address bar</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+          </motion.div>
+
+          <div className="space-y-4">
+            {benefits.map((b, i) => (
+              <motion.div key={b.title} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + i * 0.1 }}>
+                <Card variant="glass">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <b.icon className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-foreground text-sm">{b.title}</p>
+                      <p className="text-xs text-muted-foreground">{b.desc}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          <Link to="/login" className="block mt-8">
+            <Button variant="outline" size="lg">Go to Login</Button>
+          </Link>
+        </div>
+      </main>
+    </div>
+  );
+}
