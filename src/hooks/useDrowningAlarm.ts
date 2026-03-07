@@ -149,12 +149,14 @@ export function useDrowningAlarm(productId: string | undefined) {
           }
           alarmRef.current.start();
 
-          // Also use Notification API if permitted
+          // Notification with renotify + silent:false to bypass DND where possible
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('🚨 DROWNING ALERT!', {
               body: newAlert.message,
               icon: '/pwa-192x192.png',
               tag: 'drowning-alert',
+              renotify: true,
+              silent: false,
               requireInteraction: true,
               vibrate: [1000, 500, 1000, 500, 1000],
             } as NotificationOptions);
