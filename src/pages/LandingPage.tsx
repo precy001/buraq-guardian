@@ -50,6 +50,11 @@ export default function LandingPage() {
             
             <div className="flex items-center gap-4">
               <ThemeToggle />
+              <Link to="/install">
+                <Button variant="ghost" size="sm">
+                  Install App
+                </Button>
+              </Link>
               <Link to="/login">
                 <Button variant="ghost" size="sm">
                   Login
