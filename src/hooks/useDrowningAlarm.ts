@@ -11,21 +11,22 @@ interface DrowningAlert {
   message: string;
 }
 
-// Generate alarm sound using Web Audio API (no external files needed)
+// Generate alarm sound using Web Audio API with max volume to bypass DND
 function createAlarmSound(): { start: () => void; stop: () => void } {
   let audioContext: AudioContext | null = null;
   let oscillatorNodes: OscillatorNode[] = [];
   let gainNode: GainNode | null = null;
   let intervalId: ReturnType<typeof setInterval> | null = null;
+  let audioElement: HTMLAudioElement | null = null;
 
   const start = () => {
     try {
+      // Strategy 1: Web Audio API with max gain
       audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       gainNode = audioContext.createGain();
       gainNode.connect(audioContext.destination);
-      gainNode.gain.value = 0.8;
+      gainNode.gain.value = 1.0;
 
-      // Create a pulsing two-tone alarm
       const playTone = (freq: number, duration: number) => {
         if (!audioContext || !gainNode) return;
         const osc = audioContext.createOscillator();
@@ -37,7 +38,6 @@ function createAlarmSound(): { start: () => void; stop: () => void } {
         oscillatorNodes.push(osc);
       };
 
-      // Alternate between two tones every 500ms for urgency
       let toggle = false;
       const pulse = () => {
         playTone(toggle ? 880 : 1320, 0.45);
@@ -46,6 +46,48 @@ function createAlarmSound(): { start: () => void; stop: () => void } {
 
       pulse();
       intervalId = setInterval(pulse, 500);
+
+      // Strategy 2: HTML Audio element as backup (helps bypass DND on some devices)
+      // Create a data URI of a simple beep to avoid needing external files
+      try {
+        const sampleRate = 8000;
+        const duration = 1;
+        const numSamples = sampleRate * duration;
+        const buffer = new ArrayBuffer(44 + numSamples * 2);
+        const view = new DataView(buffer);
+        
+        // WAV header
+        const writeString = (offset: number, str: string) => {
+          for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+        };
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + numSamples * 2, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 1, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * 2, true);
+        view.setUint16(32, 2, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, numSamples * 2, true);
+        
+        for (let i = 0; i < numSamples; i++) {
+          const t = i / sampleRate;
+          const freq = Math.floor(t * 2) % 2 === 0 ? 880 : 1320;
+          const sample = Math.sin(2 * Math.PI * freq * t) * 32767;
+          view.setInt16(44 + i * 2, sample, true);
+        }
+        
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        audioElement = new Audio(url);
+        audioElement.loop = true;
+        audioElement.volume = 1.0;
+        audioElement.play().catch(() => {});
+      } catch {}
     } catch (e) {
       console.error('Failed to create alarm sound:', e);
     }
@@ -63,6 +105,11 @@ function createAlarmSound(): { start: () => void; stop: () => void } {
     if (audioContext) {
       audioContext.close();
       audioContext = null;
+    }
+    if (audioElement) {
+      audioElement.pause();
+      audioElement.src = '';
+      audioElement = null;
     }
   };
 
