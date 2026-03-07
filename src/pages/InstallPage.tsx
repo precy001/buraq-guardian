@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Download, Smartphone, Shield, Bell, CheckCircle } from 'lucide-react';
+import { Download, Smartphone, Shield, Bell, CheckCircle, Monitor, Share2 } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -15,8 +15,18 @@ interface BeforeInstallPromptEvent extends Event {
 export default function InstallPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
 
   useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    if (/iphone|ipad|ipod/.test(ua)) {
+      setPlatform('ios');
+    } else if (/android/.test(ua)) {
+      setPlatform('android');
+    } else {
+      setPlatform('desktop');
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -24,7 +34,6 @@ export default function InstallPage() {
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
     }
@@ -32,7 +41,7 @@ export default function InstallPage() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  const handleInstall = async () => {
+  const handleInstall = useCallback(async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -40,7 +49,7 @@ export default function InstallPage() {
       setIsInstalled(true);
     }
     setDeferredPrompt(null);
-  };
+  }, [deferredPrompt]);
 
   const benefits = [
     { icon: Bell, title: 'Instant Drowning Alerts', desc: 'Receive loud alarm notifications even when the app is in background' },
@@ -88,12 +97,57 @@ export default function InstallPage() {
             ) : (
               <Card variant="glass" className="mb-8">
                 <CardContent className="p-6 text-left text-sm text-muted-foreground">
-                  <p className="font-semibold text-foreground mb-2">How to install:</p>
-                  <ul className="space-y-2">
-                    <li><strong>iPhone/iPad:</strong> Tap Share → "Add to Home Screen"</li>
-                    <li><strong>Android:</strong> Tap the browser menu (⋮) → "Install app" or "Add to Home screen"</li>
-                    <li><strong>Desktop:</strong> Click the install icon in the address bar</li>
-                  </ul>
+                  <p className="font-semibold text-foreground mb-3">How to install:</p>
+                  
+                  {platform === 'ios' && (
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <Share2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-foreground">Step 1: Tap the Share button</p>
+                          <p>Tap the share icon (square with arrow) at the bottom of Safari</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Download className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-foreground">Step 2: Add to Home Screen</p>
+                          <p>Scroll down and tap "Add to Home Screen"</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {platform === 'android' && (
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <Smartphone className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-foreground">Tap the browser menu (⋮)</p>
+                          <p>Then select "Install app" or "Add to Home screen"</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {platform === 'desktop' && (
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <Monitor className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-foreground">Chrome / Edge</p>
+                          <p>Click the install icon <span className="inline-block px-1.5 py-0.5 rounded bg-muted text-xs font-mono">⊕</span> in the address bar, or open the browser menu (⋮) → "Install Buraq..."</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Monitor className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium text-foreground">Firefox</p>
+                          <p>Firefox doesn't support PWA install natively. Use Chrome or Edge instead.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
