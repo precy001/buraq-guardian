@@ -5,13 +5,16 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { SubscriptionPanel } from '@/components/SubscriptionPanel';
 import { PaymentPanel } from '@/components/PaymentPanel';
+import { DrowningAlarmOverlay } from '@/components/DrowningAlarmOverlay';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
-import { LogOut, User, Settings, AlertTriangle } from 'lucide-react';
+import { useDrowningAlarm } from '@/hooks/useDrowningAlarm';
+import { LogOut, User, Settings, AlertTriangle, Bell } from 'lucide-react';
 
 export default function UserDashboard() {
   const { user, subscription, logout } = useAuth();
   const navigate = useNavigate();
+  const { alert, isAlarmActive, acknowledgeAlert } = useDrowningAlarm(user?.productId);
 
   const handleLogout = () => {
     logout();
@@ -20,6 +23,14 @@ export default function UserDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Drowning Alarm Overlay */}
+      <DrowningAlarmOverlay
+        isActive={isAlarmActive}
+        message={alert?.message || ''}
+        timestamp={alert?.timestamp || new Date().toISOString()}
+        onAcknowledge={acknowledgeAlert}
+      />
+
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-4 sm:px-6">
@@ -29,6 +40,11 @@ export default function UserDashboard() {
             </Link>
             
             <div className="flex items-center gap-4">
+              {/* Alert status indicator */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
+                <Bell className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Monitoring</span>
+              </div>
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted">
                 <User className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-foreground">{user?.fullName}</span>
