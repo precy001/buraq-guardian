@@ -226,6 +226,11 @@ export function useDrowningAlarm(productId: string | undefined, subscriptionStat
   }, [alert, productId]);
 
   const triggerTestAlarm = useCallback(() => {
+    if (!hasActiveSubscription) {
+      console.warn('Cannot trigger alarm: no active subscription');
+      return;
+    }
+
     const testAlert: DrowningAlert = {
       id: 'test-' + Date.now(),
       productId: productId || 'TEST',
@@ -245,7 +250,7 @@ export function useDrowningAlarm(productId: string | undefined, subscriptionStat
     if ('vibrate' in navigator) {
       navigator.vibrate([1000, 500, 1000, 500, 1000, 500, 1000]);
     }
-  }, [productId]);
+  }, [productId, hasActiveSubscription]);
 
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
