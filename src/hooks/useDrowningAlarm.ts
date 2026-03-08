@@ -19,16 +19,22 @@ function createAlarmSound(): { start: () => void; stop: () => void } {
   let intervalId: ReturnType<typeof setInterval> | null = null;
   let audioElement: HTMLAudioElement | null = null;
 
-  const start = () => {
+  const start = async () => {
     try {
       // Strategy 1: Web Audio API with max gain
       audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume context if suspended (required by browser autoplay policies)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      
       gainNode = audioContext.createGain();
       gainNode.connect(audioContext.destination);
       gainNode.gain.value = 1.0;
 
       const playTone = (freq: number, duration: number) => {
-        if (!audioContext || !gainNode) return;
+        if (!audioContext || !gainNode || audioContext.state !== 'running') return;
         const osc = audioContext.createOscillator();
         osc.type = 'square';
         osc.frequency.value = freq;
