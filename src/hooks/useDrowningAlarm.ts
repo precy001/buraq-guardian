@@ -182,16 +182,14 @@ function createAlarmSound(): { start: () => Promise<void>; stop: () => void } {
       audioContext = null;
     }
 
-    if (audioElement) {
-      audioElement.pause();
-      audioElement.src = '';
-      audioElement = null;
-    }
+    audioElements.forEach((el) => {
+      el.pause();
+      el.src = '';
+    });
+    audioElements = [];
 
-    if (audioObjectUrl) {
-      URL.revokeObjectURL(audioObjectUrl);
-      audioObjectUrl = null;
-    }
+    audioObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+    audioObjectUrls = [];
   };
 
   return { start, stop };
