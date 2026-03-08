@@ -5,17 +5,29 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Download, Smartphone, Shield, Bell, CheckCircle, Monitor, Share2 } from 'lucide-react';
+import { Download, Smartphone, Shield, Bell, CheckCircle, Monitor, Share2, Chrome } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+// Store prompt globally so it survives re-renders and route changes
+let globalDeferredPrompt: BeforeInstallPromptEvent | null = null;
+
+// Listen for the event as early as possible (module scope)
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e: Event) => {
+    e.preventDefault();
+    globalDeferredPrompt = e as BeforeInstallPromptEvent;
+  });
+}
+
 export default function InstallPage() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(globalDeferredPrompt);
   const [isInstalled, setIsInstalled] = useState(false);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
+  const [isChromium, setIsChromium] = useState(false);
 
   useEffect(() => {
     const ua = navigator.userAgent.toLowerCase();
@@ -27,8 +39,12 @@ export default function InstallPage() {
       setPlatform('desktop');
     }
 
+    // Detect Chromium-based browsers (Chrome, Edge, Opera, Brave, etc.)
+    setIsChromium(!!(window as any).chrome || /chrome|chromium|edg|opr|brave/i.test(navigator.userAgent));
+
     const handler = (e: Event) => {
       e.preventDefault();
+      globalDeferredPrompt = e as BeforeInstallPromptEvent;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
@@ -38,16 +54,24 @@ export default function InstallPage() {
       setIsInstalled(true);
     }
 
+    // Also check if prompt became available while navigating
+    if (globalDeferredPrompt && !deferredPrompt) {
+      setDeferredPrompt(globalDeferredPrompt);
+    }
+
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const handleInstall = useCallback(async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    if (!deferredPrompt && !globalDeferredPrompt) return;
+    const prompt = deferredPrompt || globalDeferredPrompt;
+    if (!prompt) return;
+    prompt.prompt();
+    const { outcome } = await prompt.userChoice;
     if (outcome === 'accepted') {
       setIsInstalled(true);
     }
+    globalDeferredPrompt = null;
     setDeferredPrompt(null);
   }, [deferredPrompt]);
 
@@ -56,6 +80,8 @@ export default function InstallPage() {
     { icon: Shield, title: 'Works Offline', desc: 'Core features available without internet connection' },
     { icon: Smartphone, title: 'Native App Feel', desc: 'Runs like a native app on your home screen' },
   ];
+
+  const showInstallButton = deferredPrompt || globalDeferredPrompt;
 
   return (
     <div className="min-h-screen bg-background">
@@ -89,7 +115,7 @@ export default function InstallPage() {
                 <CheckCircle className="w-6 h-6" />
                 <span className="font-semibold text-lg">App is installed!</span>
               </div>
-            ) : deferredPrompt ? (
+            ) : showInstallButton ? (
               <Button variant="hero" size="xl" onClick={handleInstall} className="mb-8">
                 <Download className="w-5 h-5 mr-2" />
                 Install Now
@@ -132,18 +158,21 @@ export default function InstallPage() {
 
                   {platform === 'desktop' && (
                     <div className="space-y-3">
-                      <div className="flex items-start gap-3">
-                        <Monitor className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium text-foreground">Chrome / Edge</p>
-                          <p>Click the install icon <span className="inline-block px-1.5 py-0.5 rounded bg-muted text-xs font-mono">⊕</span> in the address bar, or open the browser menu (⋮) → "Install Buraq..."</p>
+                      {isChromium && (
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                          <Chrome className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium text-foreground">Quick Install (Chrome / Edge)</p>
+                            <p>Look for the install icon <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted text-xs font-mono">⊕</span> in the <strong>right side of the address bar</strong>, then click it.</p>
+                            <p className="mt-1">Or open the browser menu <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted text-xs font-mono">⋮</span> → "Install Buraq..."</p>
+                          </div>
                         </div>
-                      </div>
+                      )}
                       <div className="flex items-start gap-3">
                         <Monitor className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="font-medium text-foreground">Firefox</p>
-                          <p>Firefox doesn't support PWA install natively. Use Chrome or Edge instead.</p>
+                          <p className="font-medium text-foreground">Not seeing the install icon?</p>
+                          <p>Make sure you're visiting the <strong>published URL</strong> directly (not inside an iframe or editor). The install option appears only on HTTPS pages served directly.</p>
                         </div>
                       </div>
                     </div>
