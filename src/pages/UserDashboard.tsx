@@ -107,6 +107,10 @@ export default function UserDashboard() {
             <Siren className="w-4 h-4 mr-2" />
             {hasActiveSubscription ? 'Test Drowning Alarm' : 'Alarm Requires Active Subscription'}
           </Button>
+          <div className="mt-3 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+            <Volume2 className="w-4 h-4 flex-shrink-0" />
+            <span><strong>Important:</strong> Set your device volume to maximum for the drowning alarm to work at full loudness. The alarm cannot override your system volume.</span>
+          </div>
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-8">
