@@ -91,14 +91,28 @@ export default function UserDashboard() {
           </motion.div>
         )}
 
+        {/* Test Alarm Button */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-6"
+        >
+          <Button
+            onClick={triggerTestAlarm}
+            variant="outline"
+            className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          >
+            <Siren className="w-4 h-4 mr-2" />
+            Test Drowning Alarm
+          </Button>
+        </motion.div>
+
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Subscription Status */}
           <SubscriptionPanel
             subscription={subscription}
             productId={user?.productId || 'BRQ-XXXX-XXXX'}
           />
-
-          {/* Payment Panel */}
           <PaymentPanel currentPlanId={subscription?.planName} />
         </div>
       </main>
