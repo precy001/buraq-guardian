@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusIndicator } from '@/components/StatusIndicator';
@@ -11,10 +11,36 @@ interface SubscriptionPanelProps {
   productId: string;
 }
 
+function useCountdown(expiryDate: string | undefined) {
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    if (!expiryDate) return;
+
+    const update = () => {
+      const diff = Math.max(0, new Date(expiryDate).getTime() - Date.now());
+      setTimeLeft({
+        hours: Math.floor(diff / 3600000),
+        minutes: Math.floor((diff % 3600000) / 60000),
+        seconds: Math.floor((diff % 60000) / 1000),
+      });
+    };
+
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [expiryDate]);
+
+  return timeLeft;
+}
+
 export function SubscriptionPanel({ subscription, productId }: SubscriptionPanelProps) {
   const isActive = subscription?.status === 'active';
   const isSuspended = subscription?.status === 'suspended';
   const isExpiringSoon = subscription ? subscription.daysRemaining <= 7 && subscription.daysRemaining > 0 : false;
+  const isLastDay = subscription ? subscription.daysRemaining < 1 && subscription.status !== 'expired' : false;
+  const countdown = useCountdown(isLastDay ? subscription?.expiryDate : undefined);
+  const pad = (n: number) => String(n).padStart(2, '0');
 
   return (
     <motion.div
@@ -79,18 +105,26 @@ export function SubscriptionPanel({ subscription, productId }: SubscriptionPanel
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Clock className="w-5 h-5 text-accent-foreground" />
-                    <span className="text-accent-foreground font-medium">Days Remaining</span>
+                    <span className="text-accent-foreground font-medium">
+                      {isLastDay ? 'Time Remaining' : 'Days Remaining'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={cn(
-                      'text-3xl font-bold font-heading',
-                      isExpiringSoon ? 'text-warning' : 'text-accent-foreground'
-                    )}>
-                      {subscription.daysRemaining}
-                    </span>
-                    {isExpiringSoon && (
+                    {isLastDay ? (
+                      <span className="text-2xl font-bold font-heading font-mono text-warning">
+                        {pad(countdown.hours)}:{pad(countdown.minutes)}:{pad(countdown.seconds)}
+                      </span>
+                    ) : (
+                      <span className={cn(
+                        'text-3xl font-bold font-heading',
+                        isExpiringSoon ? 'text-warning' : 'text-accent-foreground'
+                      )}>
+                        {subscription.daysRemaining}
+                      </span>
+                    )}
+                    {(isExpiringSoon || isLastDay) && (
                       <Badge variant="warning" className="text-xs">
-                        Expiring Soon
+                        {isLastDay ? 'Expires Today' : 'Expiring Soon'}
                       </Badge>
                     )}
                   </div>
@@ -101,7 +135,7 @@ export function SubscriptionPanel({ subscription, productId }: SubscriptionPanel
                   <div 
                     className={cn(
                       'h-full rounded-full transition-all',
-                      isExpiringSoon ? 'bg-warning' : 'bg-success'
+                      (isExpiringSoon || isLastDay) ? 'bg-warning' : 'bg-success'
                     )}
                     style={{ width: `${Math.min((subscription.daysRemaining / subscription.totalDays) * 100, 100)}%` }}
                   />
