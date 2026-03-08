@@ -90,7 +90,7 @@ function sendWebPush($endpoint, $p256dh, $auth, $payload, $vapidPublicKey, $vapi
     $audience = parse_url($endpoint, PHP_URL_SCHEME) . '://' . parse_url($endpoint, PHP_URL_HOST);
     $jwt = createVapidJwt($audience, $vapidPublicKey, $vapidPrivateKey);
 
-    $encrypted = encryptWebPushPayload($payload, $p256dh, $auth);
+    $encrypted = encryptWebPushPayload($payload, $p256dh, $auth, $vapidPublicKey, $vapidPrivateKey);
 
     $headers = [
         'TTL: 60',
