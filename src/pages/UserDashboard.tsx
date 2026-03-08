@@ -117,11 +117,10 @@ export default function UserDashboard() {
           <Button
             onClick={triggerTestAlarm}
             variant="outline"
-            disabled={!hasActiveSubscription}
             className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
           >
             <Siren className="w-4 h-4 mr-2" />
-            {hasActiveSubscription ? 'Test Drowning Alarm' : 'Alarm Requires Active Subscription'}
+            Test Drowning Alarm
           </Button>
           <div className="mt-3 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
             <Volume2 className="w-4 h-4 flex-shrink-0" />

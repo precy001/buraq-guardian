@@ -288,32 +288,18 @@ export function useDrowningAlarm(productId: string | undefined, subscriptionStat
     setAlert(null);
   }, [alert, productId]);
 
-  const triggerTestAlarm = useCallback(async () => {
-    if (!hasActiveSubscription) {
-      console.warn('Cannot trigger alarm: no active subscription');
+  const triggerTestAlarm = useCallback(() => {
+    if (!productId) {
+      console.warn('Cannot trigger alarm: product ID is missing');
       return;
     }
 
     const testMessage = '⚠️ TEST ALARM — This is a simulated drowning alert!';
 
-    // Call backend to trigger a real alert + push notification
-    try {
-      await fetch(`${API_BASE_URL}/alerts/trigger.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product_id: productId,
-          message: testMessage,
-        }),
-      });
-    } catch (error) {
-      console.error('Failed to trigger backend alert:', error);
-    }
-
-    // Also trigger local alarm immediately (don't wait for poll)
+    // Trigger local alarm immediately (don't block on network)
     const testAlert: DrowningAlert = {
       id: 'test-' + Date.now(),
-      productId: productId || 'TEST',
+      productId,
       timestamp: new Date().toISOString(),
       status: 'active',
       message: testMessage,
@@ -330,7 +316,28 @@ export function useDrowningAlarm(productId: string | undefined, subscriptionStat
     if ('vibrate' in navigator) {
       navigator.vibrate([1000, 500, 1000, 500, 1000, 500, 1000]);
     }
-  }, [productId, hasActiveSubscription]);
+
+    // Trigger backend alert + push in parallel
+    void (async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/alerts/trigger.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product_id: productId,
+            message: testMessage,
+          }),
+        });
+
+        const result = await response.json().catch(() => null);
+        if (!response.ok || !result?.success) {
+          console.error('Backend alert trigger failed:', result?.message || `HTTP ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Failed to trigger backend alert:', error);
+      }
+    })();
+  }, [productId]);
 
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
