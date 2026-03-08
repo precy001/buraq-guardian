@@ -101,10 +101,11 @@ export default function UserDashboard() {
           <Button
             onClick={triggerTestAlarm}
             variant="outline"
+            disabled={!hasActiveSubscription}
             className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
           >
             <Siren className="w-4 h-4 mr-2" />
-            Test Drowning Alarm
+            {hasActiveSubscription ? 'Test Drowning Alarm' : 'Alarm Requires Active Subscription'}
           </Button>
         </motion.div>
 
