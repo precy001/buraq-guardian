@@ -14,13 +14,24 @@ if (file_exists($envFile)) {
         }
     }
 }
-$host = "localhost";
-$db   = "buraq";
-$user = "root";
-$pass = "";
+$host = getenv('DB_HOST') ?: "localhost";
+$db   = getenv('DB_NAME') ?: "buraq";
+$user = getenv('DB_USER') ?: "root";
+$pass = getenv('DB_PASSWORD') ?: "";
 
-try {
-    $pdo = new PDO(
+function getDBConnection() {
+    static $connection = null;
+
+    if ($connection instanceof PDO) {
+        return $connection;
+    }
+
+    $host = getenv('DB_HOST') ?: "localhost";
+    $db   = getenv('DB_NAME') ?: "buraq";
+    $user = getenv('DB_USER') ?: "root";
+    $pass = getenv('DB_PASSWORD') ?: "";
+
+    $connection = new PDO(
         "mysql:host=$host;dbname=$db;charset=utf8mb4",
         $user,
         $pass,
@@ -29,6 +40,12 @@ try {
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
         ]
     );
+
+    return $connection;
+}
+
+try {
+    $pdo = getDBConnection();
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(["error" => "Database connection failed"]);

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-const API_BASE_URL = 'http://localhost/buraq-guardian/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (window.location.hostname === 'localhost' ? 'http://localhost/buraq-guardian/api' : '/api');
 const POLL_INTERVAL = 5000; // Check every 5 seconds
 
 interface DrowningAlert {
