@@ -288,18 +288,35 @@ export function useDrowningAlarm(productId: string | undefined, subscriptionStat
     setAlert(null);
   }, [alert, productId]);
 
-  const triggerTestAlarm = useCallback(() => {
+  const triggerTestAlarm = useCallback(async () => {
     if (!hasActiveSubscription) {
       console.warn('Cannot trigger alarm: no active subscription');
       return;
     }
 
+    const testMessage = '⚠️ TEST ALARM — This is a simulated drowning alert!';
+
+    // Call backend to trigger a real alert + push notification
+    try {
+      await fetch(`${API_BASE_URL}/alerts/trigger.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: productId,
+          message: testMessage,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to trigger backend alert:', error);
+    }
+
+    // Also trigger local alarm immediately (don't wait for poll)
     const testAlert: DrowningAlert = {
       id: 'test-' + Date.now(),
       productId: productId || 'TEST',
       timestamp: new Date().toISOString(),
       status: 'active',
-      message: '⚠️ TEST ALARM — This is a simulated drowning alert!',
+      message: testMessage,
     };
 
     setAlert(testAlert);
