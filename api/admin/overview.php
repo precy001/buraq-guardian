@@ -21,99 +21,97 @@ try {
     // Validate admin authentication
     $admin = validateAdminToken();
     
-    // Get total products count
-    $stmt = $pdo->query("SELECT COUNT(*) as total FROM products");
-    $totalProducts = $stmt->fetch()['total'];
+    $pdo = getDBConnection();
     
-    // Get registered products count
-    $stmt = $pdo->query("SELECT COUNT(*) as total FROM products WHERE is_registered = 1");
-    $registeredProducts = $stmt->fetch()['total'];
-    
-    // Get unregistered products count
-    $unregisteredProducts = $totalProducts - $registeredProducts;
-    
-    // Get active subscriptions count
-    $stmt = $pdo->query("
-        SELECT COUNT(*) as total FROM subscriptions 
-        WHERE status = 'active' AND end_date > NOW()
-    ");
-    $activeSubscriptions = $stmt->fetch()['total'];
-    
-    // Get expired subscriptions count
-    $stmt = $pdo->query("
-        SELECT COUNT(*) as total FROM subscriptions 
-        WHERE status = 'expired' OR (status = 'active' AND end_date <= NOW())
-    ");
-    $expiredSubscriptions = $stmt->fetch()['total'];
-    
-    // Get suspended subscriptions count
-    $stmt = $pdo->query("SELECT COUNT(*) as total FROM subscriptions WHERE status = 'suspended'");
-    $suspendedSubscriptions = $stmt->fetch()['total'];
-    
-    // Get total users count
-    $stmt = $pdo->query("SELECT COUNT(*) as total FROM users");
-    $totalUsers = $stmt->fetch()['total'];
-    
-    // Get recently generated product IDs (last 10)
-    $stmt = $pdo->query("
-        SELECT product_id, is_registered, created_at 
-        FROM products 
-        ORDER BY created_at DESC 
-        LIMIT 10
-    ");
-    $recentProducts = $stmt->fetchAll();
-    
-    // Get recent subscriptions (last 10)
-    $stmt = $pdo->query("
-        SELECT s.*, u.full_name, u.product_id
-        FROM subscriptions s
-        LEFT JOIN users u ON s.product_id = u.product_id
-        ORDER BY s.created_at DESC
-        LIMIT 10
-    ");
-    $recentSubscriptions = $stmt->fetchAll();
-    
-    // Get recent admin activity (last 10) - optional if table exists
-    $recentActivity = [];
-    $activityTable = $pdo->query("SHOW TABLES LIKE 'admin_activity_log'")->fetch();
-    if ($activityTable) {
-        $stmt = $pdo->query("
-            SELECT al.*, a.username
-            FROM admin_activity_log al
-            JOIN admins a ON al.admin_id = a.id
-            ORDER BY al.created_at DESC
-            LIMIT 10
-        ");
-        $recentActivity = $stmt->fetchAll();
+    // Helper to safely run a count query
+    function safeCount($pdo, $query) {
+        try {
+            $stmt = $pdo->query($query);
+            return (int)$stmt->fetch()['total'];
+        } catch (Exception $e) {
+            error_log("Dashboard query failed: " . $e->getMessage() . " | Query: " . $query);
+            return 0;
+        }
     }
     
-    // Calculate revenue (this month)
-    $stmt = $pdo->query("
-        SELECT COALESCE(SUM(amount), 0) as total 
-        FROM subscriptions 
-        WHERE status = 'active' 
-        AND MONTH(created_at) = MONTH(NOW()) 
-        AND YEAR(created_at) = YEAR(NOW())
-    ");
-    $monthlyRevenue = $stmt->fetch()['total'];
+    $totalProducts = safeCount($pdo, "SELECT COUNT(*) as total FROM products");
+    $registeredProducts = safeCount($pdo, "SELECT COUNT(*) as total FROM products WHERE is_registered = 1");
+    $unregisteredProducts = $totalProducts - $registeredProducts;
+    
+    $activeSubscriptions = safeCount($pdo, "SELECT COUNT(*) as total FROM subscriptions WHERE status = 'active' AND end_date > NOW()");
+    $expiredSubscriptions = safeCount($pdo, "SELECT COUNT(*) as total FROM subscriptions WHERE status = 'expired' OR (status = 'active' AND end_date <= NOW())");
+    $suspendedSubscriptions = safeCount($pdo, "SELECT COUNT(*) as total FROM subscriptions WHERE status = 'suspended'");
+    
+    $totalUsers = safeCount($pdo, "SELECT COUNT(*) as total FROM users");
+    
+    // Revenue - subscriptions table uses amount_paid column
+    $monthlyRevenue = 0;
+    try {
+        $stmt = $pdo->query("
+            SELECT COALESCE(SUM(amount_paid), 0) as total 
+            FROM subscriptions 
+            WHERE status = 'active' 
+            AND MONTH(created_at) = MONTH(NOW()) 
+            AND YEAR(created_at) = YEAR(NOW())
+        ");
+        $monthlyRevenue = (float)$stmt->fetch()['total'];
+    } catch (Exception $e) {
+        error_log("Revenue query failed: " . $e->getMessage());
+    }
+    
+    // Recent products
+    $recentProducts = [];
+    try {
+        $stmt = $pdo->query("SELECT product_id, is_registered, created_at FROM products ORDER BY created_at DESC LIMIT 10");
+        $recentProducts = $stmt->fetchAll();
+    } catch (Exception $e) {}
+    
+    // Recent subscriptions
+    $recentSubscriptions = [];
+    try {
+        $stmt = $pdo->query("
+            SELECT s.*, u.full_name, u.product_id as user_product_id
+            FROM subscriptions s
+            LEFT JOIN users u ON s.product_id = u.product_id
+            ORDER BY s.created_at DESC
+            LIMIT 10
+        ");
+        $recentSubscriptions = $stmt->fetchAll();
+    } catch (Exception $e) {}
+    
+    // Recent admin activity - optional
+    $recentActivity = [];
+    try {
+        $activityTable = $pdo->query("SHOW TABLES LIKE 'admin_activity_log'")->fetch();
+        if ($activityTable) {
+            $stmt = $pdo->query("
+                SELECT al.*, a.username
+                FROM admin_activity_log al
+                JOIN admins a ON al.admin_id = a.id
+                ORDER BY al.created_at DESC
+                LIMIT 10
+            ");
+            $recentActivity = $stmt->fetchAll();
+        }
+    } catch (Exception $e) {}
     
     jsonResponse(true, "Dashboard data retrieved", [
         'statistics' => [
             'products' => [
-                'total' => (int)$totalProducts,
-                'registered' => (int)$registeredProducts,
-                'unregistered' => (int)$unregisteredProducts
+                'total' => $totalProducts,
+                'registered' => $registeredProducts,
+                'unregistered' => $unregisteredProducts
             ],
             'subscriptions' => [
-                'active' => (int)$activeSubscriptions,
-                'expired' => (int)$expiredSubscriptions,
-                'suspended' => (int)$suspendedSubscriptions
+                'active' => $activeSubscriptions,
+                'expired' => $expiredSubscriptions,
+                'suspended' => $suspendedSubscriptions
             ],
             'users' => [
-                'total' => (int)$totalUsers
+                'total' => $totalUsers
             ],
             'revenue' => [
-                'this_month' => (float)$monthlyRevenue
+                'this_month' => $monthlyRevenue
             ]
         ],
         'recent_products' => $recentProducts,
@@ -121,10 +119,8 @@ try {
         'recent_activity' => $recentActivity
     ]);
     
-} catch (PDOException $e) {
-    http_response_code(500);
-    jsonResponse(false, "Database error occurred");
 } catch (Exception $e) {
+    error_log("Admin overview error: " . $e->getMessage());
     http_response_code(500);
-    jsonResponse(false, "An unexpected error occurred");
+    jsonResponse(false, "Database error occurred: " . $e->getMessage());
 }
