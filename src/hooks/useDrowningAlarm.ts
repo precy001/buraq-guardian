@@ -12,23 +12,24 @@ interface DrowningAlert {
 }
 
 // Generate alarm sound using Web Audio API with max volume to bypass DND
-function createAlarmSound(): { start: () => void; stop: () => void } {
+function createAlarmSound(): { start: () => Promise<void>; stop: () => void } {
   let audioContext: AudioContext | null = null;
   let oscillatorNodes: OscillatorNode[] = [];
   let gainNode: GainNode | null = null;
   let intervalId: ReturnType<typeof setInterval> | null = null;
   let audioElement: HTMLAudioElement | null = null;
+  let audioObjectUrl: string | null = null;
 
   const start = async () => {
     try {
       // Strategy 1: Web Audio API with max gain
       audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
+
       // Resume context if suspended (required by browser autoplay policies)
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
-      
+
       gainNode = audioContext.createGain();
       gainNode.connect(audioContext.destination);
       gainNode.gain.value = 1.0;
@@ -54,18 +55,17 @@ function createAlarmSound(): { start: () => void; stop: () => void } {
       intervalId = setInterval(pulse, 500);
 
       // Strategy 2: HTML Audio element as backup (helps bypass DND on some devices)
-      // Create a data URI of a simple beep to avoid needing external files
       try {
         const sampleRate = 8000;
         const duration = 1;
         const numSamples = sampleRate * duration;
         const buffer = new ArrayBuffer(44 + numSamples * 2);
         const view = new DataView(buffer);
-        
-        // WAV header
+
         const writeString = (offset: number, str: string) => {
           for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
         };
+
         writeString(0, 'RIFF');
         view.setUint32(4, 36 + numSamples * 2, true);
         writeString(8, 'WAVE');
@@ -79,20 +79,20 @@ function createAlarmSound(): { start: () => void; stop: () => void } {
         view.setUint16(34, 16, true);
         writeString(36, 'data');
         view.setUint32(40, numSamples * 2, true);
-        
+
         for (let i = 0; i < numSamples; i++) {
           const t = i / sampleRate;
           const freq = Math.floor(t * 2) % 2 === 0 ? 880 : 1320;
           const sample = Math.sin(2 * Math.PI * freq * t) * 32767;
           view.setInt16(44 + i * 2, sample, true);
         }
-        
+
         const blob = new Blob([buffer], { type: 'audio/wav' });
-        const url = URL.createObjectURL(blob);
-        audioElement = new Audio(url);
+        audioObjectUrl = URL.createObjectURL(blob);
+        audioElement = new Audio(audioObjectUrl);
         audioElement.loop = true;
         audioElement.volume = 1.0;
-        audioElement.play().catch(() => {});
+        await audioElement.play().catch(() => {});
       } catch {}
     } catch (e) {
       console.error('Failed to create alarm sound:', e);
@@ -104,18 +104,28 @@ function createAlarmSound(): { start: () => void; stop: () => void } {
       clearInterval(intervalId);
       intervalId = null;
     }
-    oscillatorNodes.forEach(osc => {
-      try { osc.stop(); } catch {}
+
+    oscillatorNodes.forEach((osc) => {
+      try {
+        osc.stop();
+      } catch {}
     });
     oscillatorNodes = [];
+
     if (audioContext) {
       audioContext.close();
       audioContext = null;
     }
+
     if (audioElement) {
       audioElement.pause();
       audioElement.src = '';
       audioElement = null;
+    }
+
+    if (audioObjectUrl) {
+      URL.revokeObjectURL(audioObjectUrl);
+      audioObjectUrl = null;
     }
   };
 
@@ -125,8 +135,13 @@ function createAlarmSound(): { start: () => void; stop: () => void } {
 export function useDrowningAlarm(productId: string | undefined) {
   const [alert, setAlert] = useState<DrowningAlert | null>(null);
   const [isAlarmActive, setIsAlarmActive] = useState(false);
-  const alarmRef = useRef<{ start: () => void; stop: () => void } | null>(null);
+  const alarmRef = useRef<{ start: () => Promise<void>; stop: () => void } | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isAlarmActiveRef = useRef(false);
+
+  useEffect(() => {
+    isAlarmActiveRef.current = isAlarmActive;
+  }, [isAlarmActive]);
 
   const checkForAlerts = useCallback(async () => {
     if (!productId) return;
@@ -148,12 +163,12 @@ export function useDrowningAlarm(productId: string | undefined) {
 
         setAlert(newAlert);
 
-        if (!isAlarmActive) {
+        if (!isAlarmActiveRef.current) {
           setIsAlarmActive(true);
           if (!alarmRef.current) {
             alarmRef.current = createAlarmSound();
           }
-          alarmRef.current.start();
+          void alarmRef.current.start();
 
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('🚨 DROWNING ALERT!', {
@@ -175,7 +190,7 @@ export function useDrowningAlarm(productId: string | undefined) {
     } catch (error) {
       console.debug('Alert check failed:', error);
     }
-  }, [productId, isAlarmActive]);
+  }, [productId]);
 
   const acknowledgeAlert = useCallback(async () => {
     if (alarmRef.current) {
@@ -216,7 +231,7 @@ export function useDrowningAlarm(productId: string | undefined) {
     if (!alarmRef.current) {
       alarmRef.current = createAlarmSound();
     }
-    alarmRef.current.start();
+    void alarmRef.current.start();
 
     if ('vibrate' in navigator) {
       navigator.vibrate([1000, 500, 1000, 500, 1000, 500, 1000]);
@@ -237,7 +252,10 @@ export function useDrowningAlarm(productId: string | undefined) {
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
-      if (alarmRef.current) alarmRef.current.stop();
+      if (alarmRef.current) {
+        alarmRef.current.stop();
+        alarmRef.current = null;
+      }
     };
   }, [productId, checkForAlerts]);
 
