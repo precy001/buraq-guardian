@@ -16,6 +16,7 @@ export default function UserDashboard() {
   const { user, subscription, logout } = useAuth();
   const navigate = useNavigate();
   const { alert, isAlarmActive, acknowledgeAlert, triggerTestAlarm, hasActiveSubscription } = useDrowningAlarm(user?.productId, subscription?.status);
+  const { isSubscribed, isSupported, subscribeToPush } = usePushNotifications(user?.productId);
 
   const handleLogout = () => {
     logout();
