@@ -46,16 +46,20 @@ export default function LoginPage() {
 
     setIsLoading(true);
     
-    const result = await login(formData.productId, formData.password);
-    
-    if (result.success) {
-      toast.success('Welcome back!');
-      navigate('/dashboard');
-    } else {
-      toast.error(result.error || 'Login failed');
+    try {
+      const result = await login(formData.productId, formData.password);
+      
+      if (result.success) {
+        toast.success('Welcome back!');
+        navigate('/dashboard');
+      } else {
+        toast.error(result.error || 'Login failed');
+      }
+    } catch {
+      toast.error('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (

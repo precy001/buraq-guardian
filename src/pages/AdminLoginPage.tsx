@@ -48,16 +48,20 @@ export default function AdminLoginPage() {
 
     setIsLoading(true);
     
-    const result = await adminLogin(formData.email, formData.password);
-    
-    if (result.success) {
-      toast.success('Welcome, Administrator!');
-      navigate('/admin/dashboard');
-    } else {
-      toast.error(result.error || 'Login failed');
+    try {
+      const result = await adminLogin(formData.email, formData.password);
+      
+      if (result.success) {
+        toast.success('Welcome, Administrator!');
+        navigate('/admin/dashboard');
+      } else {
+        toast.error(result.error || 'Login failed');
+      }
+    } catch {
+      toast.error('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (

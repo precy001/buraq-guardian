@@ -247,7 +247,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Logo size="sm" />
             <p className="text-sm text-muted-foreground">
-              © 2024 SCHIPHA. All rights reserved.
+              © {new Date().getFullYear()} SCHIPHA. All rights reserved.
             </p>
           </div>
         </div>
