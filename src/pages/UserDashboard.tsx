@@ -138,6 +138,8 @@ export default function UserDashboard() {
           <PaymentPanel currentPlanId={subscription?.planName} />
         </div>
       </main>
+
+      <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} onLogout={handleLogout} />
     </div>
   );
 }
