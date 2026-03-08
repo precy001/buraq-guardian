@@ -30,9 +30,13 @@ function createAlarmSound(): { start: () => Promise<void>; stop: () => void } {
         await audioContext.resume();
       }
 
+      // Chain multiple gain nodes to push volume to absolute maximum
       gainNode = audioContext.createGain();
-      gainNode.connect(audioContext.destination);
+      const boostNode = audioContext.createGain();
+      boostNode.connect(audioContext.destination);
+      gainNode.connect(boostNode);
       gainNode.gain.value = 1.0;
+      boostNode.gain.value = 3.0; // Amplify beyond normal max
 
       const playTone = (freq: number, duration: number) => {
         if (!audioContext || !gainNode || audioContext.state !== 'running') return;
