@@ -202,6 +202,46 @@ function createVapidJwt($audience, $vapidPublicKey, $vapidPrivateKey) {
     return $signingInput . '.' . base64url_encode($joseSignature);
 }
 
+function createSenderKeyPair($vapidPublicKeyB64 = null, $vapidPrivateKeyB64 = null) {
+    $ephemeralKey = @openssl_pkey_new([
+        'private_key_type' => OPENSSL_KEYTYPE_EC,
+        'curve_name' => 'prime256v1',
+    ]);
+
+    if ($ephemeralKey) {
+        $details = openssl_pkey_get_details($ephemeralKey);
+        $ephemeralPublic = $details['ec']['public_key'] ?? null;
+
+        if ($ephemeralPublic && strlen($ephemeralPublic) === 65) {
+            return [$ephemeralKey, $ephemeralPublic];
+        }
+    }
+
+    if (!$vapidPublicKeyB64 || !$vapidPrivateKeyB64) {
+        throw new Exception('Failed to generate sender EC key and no VAPID fallback available: ' . collectOpenSslErrors());
+    }
+
+    $fallbackPrivatePem = vapidPrivateKeyToPem($vapidPrivateKeyB64, $vapidPublicKeyB64);
+    $fallbackPrivateKey = openssl_pkey_get_private($fallbackPrivatePem);
+    $fallbackPublicRaw = base64url_decode($vapidPublicKeyB64);
+
+    if (!$fallbackPrivateKey || strlen($fallbackPublicRaw) !== 65) {
+        throw new Exception('Failed to use VAPID fallback sender key: ' . collectOpenSslErrors());
+    }
+
+    return [$fallbackPrivateKey, $fallbackPublicRaw];
+}
+
+function collectOpenSslErrors() {
+    $errors = [];
+
+    while ($error = openssl_error_string()) {
+        $errors[] = $error;
+    }
+
+    return empty($errors) ? 'no OpenSSL error details' : implode(' | ', $errors);
+}
+
 function vapidPrivateKeyToPem($privateKeyB64Url, $publicKeyB64Url) {
     if (strpos($privateKeyB64Url, 'BEGIN EC PRIVATE KEY') !== false) {
         return $privateKeyB64Url;
