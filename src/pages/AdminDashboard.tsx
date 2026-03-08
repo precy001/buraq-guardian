@@ -93,9 +93,12 @@ export default function AdminDashboard() {
       const data = await response.json();
       if (data.success) {
         setStats(data.data);
+      } else {
+        toast.error(data.message || 'Failed to load dashboard stats');
       }
     } catch (error) {
       console.error('Failed to fetch overview:', error);
+      toast.error('Network error loading dashboard stats');
     }
   }, [adminSession?.token]);
 

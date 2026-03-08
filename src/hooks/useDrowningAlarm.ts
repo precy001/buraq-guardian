@@ -132,7 +132,7 @@ function createAlarmSound(): { start: () => Promise<void>; stop: () => void } {
   return { start, stop };
 }
 
-export function useDrowningAlarm(productId: string | undefined) {
+export function useDrowningAlarm(productId: string | undefined, subscriptionStatus?: string) {
   const [alert, setAlert] = useState<DrowningAlert | null>(null);
   const [isAlarmActive, setIsAlarmActive] = useState(false);
   const alarmRef = useRef<{ start: () => Promise<void>; stop: () => void } | null>(null);
