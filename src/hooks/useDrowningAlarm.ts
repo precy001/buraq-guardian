@@ -11,57 +11,107 @@ interface DrowningAlert {
   message: string;
 }
 
-// Generate alarm sound using Web Audio API with max volume to bypass DND
+// LIFE-CRITICAL ALARM: Uses every technique to maximize loudness
+// - Multiple layered oscillators at piercing frequencies
+// - Dynamic compressor to maximize perceived loudness
+// - Wave shaping (soft clipping) to fill the waveform
+// - Multiple simultaneous HTML Audio elements
+// - Continuous vibration pattern
 function createAlarmSound(): { start: () => Promise<void>; stop: () => void } {
   let audioContext: AudioContext | null = null;
   let oscillatorNodes: OscillatorNode[] = [];
   let gainNode: GainNode | null = null;
   let intervalId: ReturnType<typeof setInterval> | null = null;
-  let audioElement: HTMLAudioElement | null = null;
-  let audioObjectUrl: string | null = null;
+  let audioElements: HTMLAudioElement[] = [];
+  let audioObjectUrls: string[] = [];
 
   const start = async () => {
     try {
-      // Strategy 1: Web Audio API with max gain
       audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 
-      // Resume context if suspended (required by browser autoplay policies)
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
 
-      // Chain multiple gain nodes to push volume to absolute maximum
-      gainNode = audioContext.createGain();
-      const boostNode = audioContext.createGain();
-      boostNode.connect(audioContext.destination);
-      gainNode.connect(boostNode);
-      gainNode.gain.value = 1.0;
-      boostNode.gain.value = 3.0; // Amplify beyond normal max
+      // Dynamic compressor — pushes quiet parts up, maximizes perceived volume
+      const compressor = audioContext.createDynamicsCompressor();
+      compressor.threshold.value = -50;
+      compressor.knee.value = 0;
+      compressor.ratio.value = 20;
+      compressor.attack.value = 0;
+      compressor.release.value = 0.01;
+      compressor.connect(audioContext.destination);
 
-      const playTone = (freq: number, duration: number) => {
+      // Waveshaper for soft clipping — fills the waveform to max amplitude
+      const waveshaper = audioContext.createWaveShaper();
+      const curve = new Float32Array(65536);
+      for (let i = 0; i < 65536; i++) {
+        const x = (i * 2) / 65536 - 1;
+        curve[i] = (Math.PI / 2) * Math.atan(x * 5); // Aggressive soft clip
+      }
+      waveshaper.curve = curve;
+      waveshaper.oversample = '4x';
+      waveshaper.connect(compressor);
+
+      // Master gain at max
+      gainNode = audioContext.createGain();
+      gainNode.gain.value = 1.0;
+      gainNode.connect(waveshaper);
+
+      // Play multiple layered tones at piercing frequencies for maximum urgency
+      const playAlarmChord = (baseFreq: number, duration: number) => {
         if (!audioContext || !gainNode || audioContext.state !== 'running') return;
-        const osc = audioContext.createOscillator();
-        osc.type = 'square';
-        osc.frequency.value = freq;
-        osc.connect(gainNode);
-        osc.start(audioContext.currentTime);
-        osc.stop(audioContext.currentTime + duration);
-        oscillatorNodes.push(osc);
+
+        // Layer 1: Square wave (loudest, most piercing)
+        const osc1 = audioContext.createOscillator();
+        osc1.type = 'square';
+        osc1.frequency.value = baseFreq;
+        const g1 = audioContext.createGain();
+        g1.gain.value = 0.5;
+        osc1.connect(g1);
+        g1.connect(gainNode);
+        osc1.start(audioContext.currentTime);
+        osc1.stop(audioContext.currentTime + duration);
+        oscillatorNodes.push(osc1);
+
+        // Layer 2: Sawtooth an octave up (adds brightness/urgency)
+        const osc2 = audioContext.createOscillator();
+        osc2.type = 'sawtooth';
+        osc2.frequency.value = baseFreq * 2;
+        const g2 = audioContext.createGain();
+        g2.gain.value = 0.3;
+        osc2.connect(g2);
+        g2.connect(gainNode);
+        osc2.start(audioContext.currentTime);
+        osc2.stop(audioContext.currentTime + duration);
+        oscillatorNodes.push(osc2);
+
+        // Layer 3: High piercing sine (3kHz range — most sensitive human hearing)
+        const osc3 = audioContext.createOscillator();
+        osc3.type = 'sine';
+        osc3.frequency.value = 3000;
+        const g3 = audioContext.createGain();
+        g3.gain.value = 0.2;
+        osc3.connect(g3);
+        g3.connect(gainNode);
+        osc3.start(audioContext.currentTime);
+        osc3.stop(audioContext.currentTime + duration);
+        oscillatorNodes.push(osc3);
       };
 
       let toggle = false;
       const pulse = () => {
-        playTone(toggle ? 880 : 1320, 0.45);
+        playAlarmChord(toggle ? 880 : 1320, 0.4);
         toggle = !toggle;
       };
 
       pulse();
-      intervalId = setInterval(pulse, 500);
+      intervalId = setInterval(pulse, 450);
 
-      // Strategy 2: HTML Audio element as backup (helps bypass DND on some devices)
+      // Strategy 2: Multiple HTML Audio elements playing simultaneously
       try {
-        const sampleRate = 8000;
-        const duration = 1;
+        const sampleRate = 44100;
+        const duration = 2;
         const numSamples = sampleRate * duration;
         const buffer = new ArrayBuffer(44 + numSamples * 2);
         const view = new DataView(buffer);
@@ -86,17 +136,28 @@ function createAlarmSound(): { start: () => Promise<void>; stop: () => void } {
 
         for (let i = 0; i < numSamples; i++) {
           const t = i / sampleRate;
-          const freq = Math.floor(t * 2) % 2 === 0 ? 880 : 1320;
-          const sample = Math.sin(2 * Math.PI * freq * t) * 32767;
-          view.setInt16(44 + i * 2, sample, true);
+          const cyclePos = t % 1;
+          const freq = cyclePos < 0.5 ? 880 : 1320;
+          // Combine square + sine at 3kHz for max piercing effect
+          const square = Math.sign(Math.sin(2 * Math.PI * freq * t));
+          const highPiercing = Math.sin(2 * Math.PI * 3000 * t) * 0.4;
+          const combined = (square * 0.7 + highPiercing) * 32767;
+          const clamped = Math.max(-32767, Math.min(32767, combined));
+          view.setInt16(44 + i * 2, clamped, true);
         }
 
         const blob = new Blob([buffer], { type: 'audio/wav' });
-        audioObjectUrl = URL.createObjectURL(blob);
-        audioElement = new Audio(audioObjectUrl);
-        audioElement.loop = true;
-        audioElement.volume = 1.0;
-        await audioElement.play().catch(() => {});
+
+        // Create multiple audio elements for redundancy
+        for (let a = 0; a < 2; a++) {
+          const url = URL.createObjectURL(blob);
+          audioObjectUrls.push(url);
+          const audio = new Audio(url);
+          audio.loop = true;
+          audio.volume = 1.0;
+          audioElements.push(audio);
+          await audio.play().catch(() => {});
+        }
       } catch {}
     } catch (e) {
       console.error('Failed to create alarm sound:', e);
