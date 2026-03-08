@@ -67,25 +67,29 @@ try {
     $stmt = $pdo->query("
         SELECT s.*, u.full_name, u.product_id
         FROM subscriptions s
-        JOIN users u ON s.product_id = u.product_id
+        LEFT JOIN users u ON s.product_id = u.product_id
         ORDER BY s.created_at DESC
         LIMIT 10
     ");
     $recentSubscriptions = $stmt->fetchAll();
     
-    // Get recent admin activity (last 10)
-    $stmt = $pdo->query("
-        SELECT al.*, a.username
-        FROM admin_activity_log al
-        JOIN admins a ON al.admin_id = a.id
-        ORDER BY al.created_at DESC
-        LIMIT 10
-    ");
-    $recentActivity = $stmt->fetchAll();
+    // Get recent admin activity (last 10) - optional if table exists
+    $recentActivity = [];
+    $activityTable = $pdo->query("SHOW TABLES LIKE 'admin_activity_log'")->fetch();
+    if ($activityTable) {
+        $stmt = $pdo->query("
+            SELECT al.*, a.username
+            FROM admin_activity_log al
+            JOIN admins a ON al.admin_id = a.id
+            ORDER BY al.created_at DESC
+            LIMIT 10
+        ");
+        $recentActivity = $stmt->fetchAll();
+    }
     
     // Calculate revenue (this month)
     $stmt = $pdo->query("
-        SELECT COALESCE(SUM(amount_paid), 0) as total 
+        SELECT COALESCE(SUM(amount), 0) as total 
         FROM subscriptions 
         WHERE status = 'active' 
         AND MONTH(created_at) = MONTH(NOW()) 
