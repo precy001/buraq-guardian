@@ -9,12 +9,14 @@ import { DrowningAlarmOverlay } from '@/components/DrowningAlarmOverlay';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
 import { useDrowningAlarm } from '@/hooks/useDrowningAlarm';
-import { LogOut, User, Settings, AlertTriangle, Bell, Siren, Volume2 } from 'lucide-react';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { LogOut, User, Settings, AlertTriangle, Bell, Siren, Volume2, BellRing } from 'lucide-react';
 
 export default function UserDashboard() {
   const { user, subscription, logout } = useAuth();
   const navigate = useNavigate();
   const { alert, isAlarmActive, acknowledgeAlert, triggerTestAlarm, hasActiveSubscription } = useDrowningAlarm(user?.productId, subscription?.status);
+  const { isSubscribed, isSupported, subscribeToPush } = usePushNotifications(user?.productId);
 
   const handleLogout = () => {
     logout();
@@ -41,10 +43,24 @@ export default function UserDashboard() {
             
             <div className="flex items-center gap-4">
               {/* Alert status indicator */}
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
-                <Bell className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Monitoring</span>
-              </div>
+              {isSupported && (
+                <button
+                  onClick={subscribeToPush}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    isSubscribed
+                      ? 'bg-success/10 text-success'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 cursor-pointer'
+                  }`}
+                  title={isSubscribed ? 'Push notifications active' : 'Click to enable push notifications'}
+                >
+                  {isSubscribed ? (
+                    <Bell className="w-3.5 h-3.5" />
+                  ) : (
+                    <BellRing className="w-3.5 h-3.5" />
+                  )}
+                  <span className="hidden sm:inline">{isSubscribed ? 'Notifications On' : 'Enable Notifications'}</span>
+                </button>
+              )}
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted">
                 <User className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-foreground">{user?.fullName}</span>

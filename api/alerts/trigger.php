@@ -38,6 +38,10 @@ try {
 
     $alertId = $db->lastInsertId();
 
+    // Send push notifications to all subscribed devices
+    require_once __DIR__ . '/../push/send.php';
+    sendPushNotifications($product_id, $message);
+
     sendSuccess([
         'alert_id' => $alertId,
         'message' => 'Drowning alert triggered successfully',
