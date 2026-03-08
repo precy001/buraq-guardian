@@ -14,7 +14,7 @@ import { LogOut, User, Settings, AlertTriangle, Bell, Siren } from 'lucide-react
 export default function UserDashboard() {
   const { user, subscription, logout } = useAuth();
   const navigate = useNavigate();
-  const { alert, isAlarmActive, acknowledgeAlert, triggerTestAlarm } = useDrowningAlarm(user?.productId);
+  const { alert, isAlarmActive, acknowledgeAlert, triggerTestAlarm, hasActiveSubscription } = useDrowningAlarm(user?.productId, subscription?.status);
 
   const handleLogout = () => {
     logout();
@@ -101,10 +101,11 @@ export default function UserDashboard() {
           <Button
             onClick={triggerTestAlarm}
             variant="outline"
+            disabled={!hasActiveSubscription}
             className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
           >
             <Siren className="w-4 h-4 mr-2" />
-            Test Drowning Alarm
+            {hasActiveSubscription ? 'Test Drowning Alarm' : 'Alarm Requires Active Subscription'}
           </Button>
         </motion.div>
 

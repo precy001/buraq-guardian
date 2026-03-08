@@ -132,7 +132,7 @@ function createAlarmSound(): { start: () => Promise<void>; stop: () => void } {
   return { start, stop };
 }
 
-export function useDrowningAlarm(productId: string | undefined) {
+export function useDrowningAlarm(productId: string | undefined, subscriptionStatus?: string) {
   const [alert, setAlert] = useState<DrowningAlert | null>(null);
   const [isAlarmActive, setIsAlarmActive] = useState(false);
   const alarmRef = useRef<{ start: () => Promise<void>; stop: () => void } | null>(null);
@@ -143,8 +143,10 @@ export function useDrowningAlarm(productId: string | undefined) {
     isAlarmActiveRef.current = isAlarmActive;
   }, [isAlarmActive]);
 
+  const hasActiveSubscription = subscriptionStatus === 'active';
+
   const checkForAlerts = useCallback(async () => {
-    if (!productId) return;
+    if (!productId || !hasActiveSubscription) return;
 
     try {
       const response = await fetch(
@@ -170,8 +172,9 @@ export function useDrowningAlarm(productId: string | undefined) {
           }
           void alarmRef.current.start();
 
+          // Send notification that can bring the app to foreground
           if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('🚨 DROWNING ALERT!', {
+            const notification = new Notification('🚨 DROWNING ALERT!', {
               body: newAlert.message,
               icon: '/pwa-192x192.png',
               tag: 'drowning-alert',
@@ -180,6 +183,12 @@ export function useDrowningAlarm(productId: string | undefined) {
               requireInteraction: true,
               vibrate: [1000, 500, 1000, 500, 1000],
             } as NotificationOptions);
+
+            // When user clicks notification, bring app to foreground
+            notification.onclick = () => {
+              window.focus();
+              notification.close();
+            };
           }
 
           if ('vibrate' in navigator) {
@@ -190,7 +199,7 @@ export function useDrowningAlarm(productId: string | undefined) {
     } catch (error) {
       console.debug('Alert check failed:', error);
     }
-  }, [productId]);
+  }, [productId, hasActiveSubscription]);
 
   const acknowledgeAlert = useCallback(async () => {
     if (alarmRef.current) {
@@ -217,6 +226,11 @@ export function useDrowningAlarm(productId: string | undefined) {
   }, [alert, productId]);
 
   const triggerTestAlarm = useCallback(() => {
+    if (!hasActiveSubscription) {
+      console.warn('Cannot trigger alarm: no active subscription');
+      return;
+    }
+
     const testAlert: DrowningAlert = {
       id: 'test-' + Date.now(),
       productId: productId || 'TEST',
@@ -236,7 +250,7 @@ export function useDrowningAlarm(productId: string | undefined) {
     if ('vibrate' in navigator) {
       navigator.vibrate([1000, 500, 1000, 500, 1000, 500, 1000]);
     }
-  }, [productId]);
+  }, [productId, hasActiveSubscription]);
 
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -245,7 +259,7 @@ export function useDrowningAlarm(productId: string | undefined) {
   }, []);
 
   useEffect(() => {
-    if (!productId) return;
+    if (!productId || !hasActiveSubscription) return;
 
     checkForAlerts();
     pollRef.current = setInterval(checkForAlerts, POLL_INTERVAL);
@@ -257,7 +271,7 @@ export function useDrowningAlarm(productId: string | undefined) {
         alarmRef.current = null;
       }
     };
-  }, [productId, checkForAlerts]);
+  }, [productId, hasActiveSubscription, checkForAlerts]);
 
-  return { alert, isAlarmActive, acknowledgeAlert, triggerTestAlarm };
+  return { alert, isAlarmActive, acknowledgeAlert, triggerTestAlarm, hasActiveSubscription };
 }
