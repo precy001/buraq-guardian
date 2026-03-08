@@ -105,18 +105,26 @@ export function SubscriptionPanel({ subscription, productId }: SubscriptionPanel
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Clock className="w-5 h-5 text-accent-foreground" />
-                    <span className="text-accent-foreground font-medium">Days Remaining</span>
+                    <span className="text-accent-foreground font-medium">
+                      {isLastDay ? 'Time Remaining' : 'Days Remaining'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={cn(
-                      'text-3xl font-bold font-heading',
-                      isExpiringSoon ? 'text-warning' : 'text-accent-foreground'
-                    )}>
-                      {subscription.daysRemaining}
-                    </span>
-                    {isExpiringSoon && (
+                    {isLastDay ? (
+                      <span className="text-2xl font-bold font-heading font-mono text-warning">
+                        {pad(countdown.hours)}:{pad(countdown.minutes)}:{pad(countdown.seconds)}
+                      </span>
+                    ) : (
+                      <span className={cn(
+                        'text-3xl font-bold font-heading',
+                        isExpiringSoon ? 'text-warning' : 'text-accent-foreground'
+                      )}>
+                        {subscription.daysRemaining}
+                      </span>
+                    )}
+                    {(isExpiringSoon || isLastDay) && (
                       <Badge variant="warning" className="text-xs">
-                        Expiring Soon
+                        {isLastDay ? 'Expires Today' : 'Expiring Soon'}
                       </Badge>
                     )}
                   </div>
@@ -127,7 +135,7 @@ export function SubscriptionPanel({ subscription, productId }: SubscriptionPanel
                   <div 
                     className={cn(
                       'h-full rounded-full transition-all',
-                      isExpiringSoon ? 'bg-warning' : 'bg-success'
+                      (isExpiringSoon || isLastDay) ? 'bg-warning' : 'bg-success'
                     )}
                     style={{ width: `${Math.min((subscription.daysRemaining / subscription.totalDays) * 100, 100)}%` }}
                   />
