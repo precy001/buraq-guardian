@@ -14,7 +14,7 @@ import { LogOut, User, Settings, AlertTriangle, Bell } from 'lucide-react';
 export default function UserDashboard() {
   const { user, subscription, logout } = useAuth();
   const navigate = useNavigate();
-  const { alert, isAlarmActive, acknowledgeAlert } = useDrowningAlarm(user?.productId);
+  const { alert, isAlarmActive, acknowledgeAlert, triggerTestAlarm } = useDrowningAlarm(user?.productId);
 
   const handleLogout = () => {
     logout();
