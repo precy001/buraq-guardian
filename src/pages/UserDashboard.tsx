@@ -68,7 +68,7 @@ export default function UserDashboard() {
                 <span className="text-sm font-medium text-foreground">{user?.fullName}</span>
               </div>
               <ThemeToggle />
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)}>
                 <Settings className="w-5 h-5" />
               </Button>
               <Button variant="outline" size="sm" onClick={handleLogout}>
