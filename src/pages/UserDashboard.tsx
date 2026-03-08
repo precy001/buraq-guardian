@@ -9,7 +9,7 @@ import { DrowningAlarmOverlay } from '@/components/DrowningAlarmOverlay';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
 import { useDrowningAlarm } from '@/hooks/useDrowningAlarm';
-import { LogOut, User, Settings, AlertTriangle, Bell } from 'lucide-react';
+import { LogOut, User, Settings, AlertTriangle, Bell, Siren } from 'lucide-react';
 
 export default function UserDashboard() {
   const { user, subscription, logout } = useAuth();
