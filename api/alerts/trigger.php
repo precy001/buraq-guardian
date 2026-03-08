@@ -40,11 +40,12 @@ try {
 
     // Send push notifications to all subscribed devices
     require_once __DIR__ . '/../push/send.php';
-    sendPushNotifications($product_id, $message);
+    $pushStats = sendPushNotifications($product_id, $message);
 
     sendSuccess([
         'alert_id' => $alertId,
         'message' => 'Drowning alert triggered successfully',
+        'push' => $pushStats,
     ]);
 } catch (PDOException $e) {
     sendError('Database error: ' . $e->getMessage(), 500);
