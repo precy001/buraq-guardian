@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { PaymentPanel } from '@/components/PaymentPanel';
 import { DrowningAlarmOverlay } from '@/components/DrowningAlarmOverlay';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
+import { SettingsSheet } from '@/components/SettingsSheet';
 import { useDrowningAlarm } from '@/hooks/useDrowningAlarm';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { LogOut, User, Settings, AlertTriangle, Bell, Siren, Volume2, BellRing } from 'lucide-react';
@@ -15,6 +16,7 @@ import { LogOut, User, Settings, AlertTriangle, Bell, Siren, Volume2, BellRing }
 export default function UserDashboard() {
   const { user, subscription, logout } = useAuth();
   const navigate = useNavigate();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { alert, isAlarmActive, acknowledgeAlert, triggerTestAlarm, hasActiveSubscription } = useDrowningAlarm(user?.productId, subscription?.status);
   const { isSubscribed, isSupported, subscribeToPush } = usePushNotifications(user?.productId);
 
