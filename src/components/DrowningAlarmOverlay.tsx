@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Phone, X } from 'lucide-react';
+import { AlertTriangle, Phone, X, Volume2 } from 'lucide-react';
 
 interface DrowningAlarmOverlayProps {
   isActive: boolean;
