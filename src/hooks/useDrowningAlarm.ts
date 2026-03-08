@@ -143,8 +143,10 @@ export function useDrowningAlarm(productId: string | undefined, subscriptionStat
     isAlarmActiveRef.current = isAlarmActive;
   }, [isAlarmActive]);
 
+  const hasActiveSubscription = subscriptionStatus === 'active';
+
   const checkForAlerts = useCallback(async () => {
-    if (!productId) return;
+    if (!productId || !hasActiveSubscription) return;
 
     try {
       const response = await fetch(
@@ -170,8 +172,9 @@ export function useDrowningAlarm(productId: string | undefined, subscriptionStat
           }
           void alarmRef.current.start();
 
+          // Send notification that can bring the app to foreground
           if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('🚨 DROWNING ALERT!', {
+            const notification = new Notification('🚨 DROWNING ALERT!', {
               body: newAlert.message,
               icon: '/pwa-192x192.png',
               tag: 'drowning-alert',
@@ -180,6 +183,12 @@ export function useDrowningAlarm(productId: string | undefined, subscriptionStat
               requireInteraction: true,
               vibrate: [1000, 500, 1000, 500, 1000],
             } as NotificationOptions);
+
+            // When user clicks notification, bring app to foreground
+            notification.onclick = () => {
+              window.focus();
+              notification.close();
+            };
           }
 
           if ('vibrate' in navigator) {
@@ -190,7 +199,7 @@ export function useDrowningAlarm(productId: string | undefined, subscriptionStat
     } catch (error) {
       console.debug('Alert check failed:', error);
     }
-  }, [productId]);
+  }, [productId, hasActiveSubscription]);
 
   const acknowledgeAlert = useCallback(async () => {
     if (alarmRef.current) {
