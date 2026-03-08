@@ -259,7 +259,7 @@ export function useDrowningAlarm(productId: string | undefined, subscriptionStat
   }, []);
 
   useEffect(() => {
-    if (!productId) return;
+    if (!productId || !hasActiveSubscription) return;
 
     checkForAlerts();
     pollRef.current = setInterval(checkForAlerts, POLL_INTERVAL);
@@ -271,7 +271,7 @@ export function useDrowningAlarm(productId: string | undefined, subscriptionStat
         alarmRef.current = null;
       }
     };
-  }, [productId, checkForAlerts]);
+  }, [productId, hasActiveSubscription, checkForAlerts]);
 
-  return { alert, isAlarmActive, acknowledgeAlert, triggerTestAlarm };
+  return { alert, isAlarmActive, acknowledgeAlert, triggerTestAlarm, hasActiveSubscription };
 }
