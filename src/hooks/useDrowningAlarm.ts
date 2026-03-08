@@ -149,7 +149,6 @@ export function useDrowningAlarm(productId: string | undefined) {
           }
           alarmRef.current.start();
 
-          // Notification with renotify + silent:false to bypass DND where possible
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('🚨 DROWNING ALERT!', {
               body: newAlert.message,
@@ -162,32 +161,27 @@ export function useDrowningAlarm(productId: string | undefined) {
             } as NotificationOptions);
           }
 
-          // Vibrate device if supported
           if ('vibrate' in navigator) {
             navigator.vibrate([1000, 500, 1000, 500, 1000, 500, 1000]);
           }
         }
       }
     } catch (error) {
-      // Silently fail - don't disrupt the user experience for network issues
       console.debug('Alert check failed:', error);
     }
   }, [productId, isAlarmActive]);
 
   const acknowledgeAlert = useCallback(async () => {
-    // Stop the alarm
     if (alarmRef.current) {
       alarmRef.current.stop();
       alarmRef.current = null;
     }
     setIsAlarmActive(false);
 
-    // Stop vibration
     if ('vibrate' in navigator) {
       navigator.vibrate(0);
     }
 
-    // Notify backend
     if (alert?.id) {
       try {
         await fetch(`${API_BASE_URL}/alerts/acknowledge.php`, {
@@ -201,14 +195,34 @@ export function useDrowningAlarm(productId: string | undefined) {
     setAlert(null);
   }, [alert, productId]);
 
-  // Request notification permission on mount
+  const triggerTestAlarm = useCallback(() => {
+    const testAlert: DrowningAlert = {
+      id: 'test-' + Date.now(),
+      productId: productId || 'TEST',
+      timestamp: new Date().toISOString(),
+      status: 'active',
+      message: '⚠️ TEST ALARM — This is a simulated drowning alert!',
+    };
+
+    setAlert(testAlert);
+    setIsAlarmActive(true);
+
+    if (!alarmRef.current) {
+      alarmRef.current = createAlarmSound();
+    }
+    alarmRef.current.start();
+
+    if ('vibrate' in navigator) {
+      navigator.vibrate([1000, 500, 1000, 500, 1000, 500, 1000]);
+    }
+  }, [productId]);
+
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
   }, []);
 
-  // Start polling
   useEffect(() => {
     if (!productId) return;
 
@@ -221,5 +235,5 @@ export function useDrowningAlarm(productId: string | undefined) {
     };
   }, [productId, checkForAlerts]);
 
-  return { alert, isAlarmActive, acknowledgeAlert };
+  return { alert, isAlarmActive, acknowledgeAlert, triggerTestAlarm };
 }
