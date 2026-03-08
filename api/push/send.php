@@ -90,7 +90,7 @@ function sendWebPush($endpoint, $p256dh, $auth, $payload, $vapidPublicKey, $vapi
     $audience = parse_url($endpoint, PHP_URL_SCHEME) . '://' . parse_url($endpoint, PHP_URL_HOST);
     $jwt = createVapidJwt($audience, $vapidPublicKey, $vapidPrivateKey);
 
-    $encrypted = encryptWebPushPayload($payload, $p256dh, $auth);
+    $encrypted = encryptWebPushPayload($payload, $p256dh, $auth, $vapidPublicKey, $vapidPrivateKey);
 
     $headers = [
         'TTL: 60',
@@ -122,7 +122,7 @@ function sendWebPush($endpoint, $p256dh, $auth, $payload, $vapidPublicKey, $vapi
     }
 }
 
-function encryptWebPushPayload($payload, $userPublicKeyB64, $userAuthB64) {
+function encryptWebPushPayload($payload, $userPublicKeyB64, $userAuthB64, $vapidPublicKeyB64 = null, $vapidPrivateKeyB64 = null) {
     $userPublicKey = base64url_decode($userPublicKeyB64);
     $userAuth = base64url_decode($userAuthB64);
 
@@ -130,20 +130,7 @@ function encryptWebPushPayload($payload, $userPublicKeyB64, $userAuthB64) {
         throw new Exception('Invalid user public key length');
     }
 
-    $serverKey = openssl_pkey_new([
-        'private_key_type' => OPENSSL_KEYTYPE_EC,
-        'curve_name' => 'prime256v1',
-    ]);
-
-    if (!$serverKey) {
-        throw new Exception('Failed to generate ephemeral EC key');
-    }
-
-    $serverKeyDetails = openssl_pkey_get_details($serverKey);
-    $serverPublicKey = $serverKeyDetails['ec']['public_key'] ?? null;
-    if (!$serverPublicKey || strlen($serverPublicKey) !== 65) {
-        throw new Exception('Failed to extract ephemeral public key');
-    }
+    [$serverKey, $serverPublicKey] = createSenderKeyPair($vapidPublicKeyB64, $vapidPrivateKeyB64);
 
     $userPublicPem = ecPublicKeyToPem($userPublicKey);
     $userPublic = openssl_pkey_get_public($userPublicPem);
@@ -153,7 +140,7 @@ function encryptWebPushPayload($payload, $userPublicKeyB64, $userAuthB64) {
 
     $sharedSecret = openssl_pkey_derive($userPublic, $serverKey, 32);
     if ($sharedSecret === false) {
-        throw new Exception('ECDH derivation failed');
+        throw new Exception('ECDH derivation failed: ' . collectOpenSslErrors());
     }
 
     // RFC 8291
@@ -213,6 +200,46 @@ function createVapidJwt($audience, $vapidPublicKey, $vapidPrivateKey) {
     $joseSignature = derToJose($derSignature, 64);
 
     return $signingInput . '.' . base64url_encode($joseSignature);
+}
+
+function createSenderKeyPair($vapidPublicKeyB64 = null, $vapidPrivateKeyB64 = null) {
+    $ephemeralKey = @openssl_pkey_new([
+        'private_key_type' => OPENSSL_KEYTYPE_EC,
+        'curve_name' => 'prime256v1',
+    ]);
+
+    if ($ephemeralKey) {
+        $details = openssl_pkey_get_details($ephemeralKey);
+        $ephemeralPublic = $details['ec']['public_key'] ?? null;
+
+        if ($ephemeralPublic && strlen($ephemeralPublic) === 65) {
+            return [$ephemeralKey, $ephemeralPublic];
+        }
+    }
+
+    if (!$vapidPublicKeyB64 || !$vapidPrivateKeyB64) {
+        throw new Exception('Failed to generate sender EC key and no VAPID fallback available: ' . collectOpenSslErrors());
+    }
+
+    $fallbackPrivatePem = vapidPrivateKeyToPem($vapidPrivateKeyB64, $vapidPublicKeyB64);
+    $fallbackPrivateKey = openssl_pkey_get_private($fallbackPrivatePem);
+    $fallbackPublicRaw = base64url_decode($vapidPublicKeyB64);
+
+    if (!$fallbackPrivateKey || strlen($fallbackPublicRaw) !== 65) {
+        throw new Exception('Failed to use VAPID fallback sender key: ' . collectOpenSslErrors());
+    }
+
+    return [$fallbackPrivateKey, $fallbackPublicRaw];
+}
+
+function collectOpenSslErrors() {
+    $errors = [];
+
+    while ($error = openssl_error_string()) {
+        $errors[] = $error;
+    }
+
+    return empty($errors) ? 'no OpenSSL error details' : implode(' | ', $errors);
 }
 
 function vapidPrivateKeyToPem($privateKeyB64Url, $publicKeyB64Url) {
