@@ -59,25 +59,29 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     
-    const registerData: RegisterData = {
-      productId: formData.productId,
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      address: formData.address,
-      password: formData.password,
-    };
-    
-    const result = await register(registerData);
-    
-    if (result.success) {
-      toast.success('Registration successful! Please login.');
-      navigate('/login');
-    } else {
-      toast.error(result.error || 'Registration failed');
+    try {
+      const registerData: RegisterData = {
+        productId: formData.productId,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        password: formData.password,
+      };
+      
+      const result = await register(registerData);
+      
+      if (result.success) {
+        toast.success('Registration successful! Please login.');
+        navigate('/login');
+      } else {
+        toast.error(result.error || 'Registration failed');
+      }
+    } catch {
+      toast.error('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   const updateField = (field: string, value: string) => {

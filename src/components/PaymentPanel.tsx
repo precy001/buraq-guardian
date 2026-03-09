@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, CreditCard, Zap, Crown, Star, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { API_BASE_URL } from '@/lib/api';
 
 interface Plan {
   id: string;
@@ -57,7 +58,6 @@ const plans: Plan[] = [
   },
 ];
 
-const API_BASE_URL = 'http://localhost/buraq-guardian/api';
 
 interface PaymentPanelProps {
   currentPlanId?: string;
