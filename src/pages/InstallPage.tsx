@@ -104,7 +104,7 @@ export default function InstallPage() {
             </div>
 
             <h1 className="text-3xl sm:text-4xl font-heading font-bold text-foreground mb-4">
-              Install Buraq App
+              Install Al A'yn App
             </h1>
             <p className="text-muted-foreground mb-8">
               Install the app on your device for the best experience with real-time drowning alerts.
