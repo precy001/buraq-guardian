@@ -49,7 +49,7 @@ export function AuthLayout({ children, title, subtitle, showBackLink = true }: A
                 <span className="text-primary">Automated Protection</span>
               </h1>
               <p className="text-lg text-white/80 max-w-md">
-                The Buraq drowning detection system provides real-time monitoring and automatic rescue activation for complete peace of mind.
+                The Al A'yn drowning detection system provides real-time monitoring and automatic rescue activation for complete peace of mind.
               </p>
             </motion.div>
             
