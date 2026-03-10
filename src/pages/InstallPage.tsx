@@ -164,7 +164,7 @@ export default function InstallPage() {
                           <div>
                             <p className="font-medium text-foreground">Quick Install (Chrome / Edge)</p>
                             <p>Look for the install icon <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted text-xs font-mono">⊕</span> in the <strong>right side of the address bar</strong>, then click it.</p>
-                            <p className="mt-1">Or open the browser menu <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted text-xs font-mono">⋮</span> → "Install Buraq..."</p>
+                            <p className="mt-1">Or open the browser menu <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-muted text-xs font-mono">⋮</span> → "Install Al A'yn..."</p>
                           </div>
                         </div>
                       )}

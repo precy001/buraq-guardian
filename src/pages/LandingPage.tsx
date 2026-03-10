@@ -185,7 +185,7 @@ export default function LandingPage() {
                   Ready to Protect Your Pool?
                 </h2>
                 <p className="text-lg text-white/80 mb-8">
-                  Register your Buraq device today and activate your subscription to start protecting your loved ones.
+                  Register your Al A'yn device today and activate your subscription to start protecting your loved ones.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Link to="/register">

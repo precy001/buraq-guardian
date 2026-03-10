@@ -94,7 +94,7 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="Register Your Device"
-      subtitle="Bind your Buraq device to your account for protection"
+      subtitle="Bind your Al A'yn device to your account for protection"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
