@@ -1,5 +1,5 @@
 import React from 'react';
-import logoImage from '@/assets/schipha-logo.png';
+import logoImage from '@/assets/schipha-logo.jpg';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
