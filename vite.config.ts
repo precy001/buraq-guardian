@@ -19,8 +19,8 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff2}"],
       },
       manifest: {
-        name: "Schiipha Buraq - Pool Safety System",
-        short_name: "Buraq",
+        name: "Schiipha Al A'yn - Pool Safety System",
+        short_name: "Al A'yn",
         description: "AI-powered drowning detection and rescue system",
         theme_color: "#0ea5e9",
         background_color: "#f8fafc",
