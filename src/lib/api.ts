@@ -3,10 +3,7 @@
  */
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (window.location.hostname === 'localhost'
-    ? 'http://localhost/buraq-guardian/api'
-    : '/api');
+  import.meta.env.VITE_API_BASE_URL || 'https://schiiphaalayn.com.ng/api';
 
 const DEFAULT_TIMEOUT = 15_000; // 15 seconds
 const MAX_RETRIES = 2;
