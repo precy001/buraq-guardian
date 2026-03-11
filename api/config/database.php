@@ -27,9 +27,9 @@ function getDBConnection() {
     }
 
     $host = getenv('DB_HOST') ?: "localhost";
-    $db   = getenv('DB_NAME') ?: "buraq";
-    $user = getenv('DB_USER') ?: "root";
-    $pass = getenv('DB_PASSWORD') ?: "";
+    $db   = getenv('DB_NAME') ?: "schiiph1_alayn";
+    $user = getenv('DB_USER') ?: "schiiph1_alayn";
+    $pass = getenv('DB_PASSWORD') ?: "UltimateDev))@@#";
 
     $connection = new PDO(
         "mysql:host=$host;dbname=$db;charset=utf8mb4",

@@ -116,14 +116,7 @@ export default function UserDashboard() {
           transition={{ delay: 0.1 }}
           className="mb-6"
         >
-          <Button
-            onClick={triggerTestAlarm}
-            variant="outline"
-            className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-          >
-            <Siren className="w-4 h-4 mr-2" />
-            Test Drowning Alarm
-          </Button>
+        
           <div className="mt-3 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
             <Volume2 className="w-4 h-4 flex-shrink-0" />
             <span><strong>Important:</strong> Set your device volume to maximum for the drowning alarm to work at full loudness. The alarm cannot override your system volume.</span>
