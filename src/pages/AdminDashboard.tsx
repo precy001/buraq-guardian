@@ -29,7 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (window.location.hostname === 'localhost' ? 'http://localhost/buraq-guardian/api' : '/api');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://schiiphaalayn.com.ng/api';
 
 interface OverviewStats {
   statistics: {

@@ -57,7 +57,7 @@ export interface RegisterData {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (window.location.hostname === 'localhost' ? 'http://localhost/buraq-guardian/api' : '/api');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://schiiphaalayn.com.ng/api';
 const STORAGE_KEY = 'buraq_auth_session';
 const ADMIN_STORAGE_KEY = 'buraq_admin_session';
 
