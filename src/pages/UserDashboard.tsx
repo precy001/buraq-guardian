@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { SubscriptionPanel } from '@/components/SubscriptionPanel';
 import { PaymentPanel } from '@/components/PaymentPanel';
+import { ActivityHistory } from '@/components/ActivityHistory';
 import { DrowningAlarmOverlay } from '@/components/DrowningAlarmOverlay';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
@@ -123,12 +124,17 @@ export default function UserDashboard() {
           </div>
         </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
           <SubscriptionPanel
             subscription={subscription}
             productId={user?.productId || 'BRQ-XXXX-XXXX'}
           />
           <PaymentPanel currentPlanId={subscription?.planName} />
+        </div>
+
+        {/* Activity History */}
+        <div className="mt-6 sm:mt-8">
+          <ActivityHistory productId={user?.productId || ''} />
         </div>
       </main>
 
