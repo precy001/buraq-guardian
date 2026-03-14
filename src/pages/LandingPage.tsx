@@ -48,9 +48,9 @@ export default function LandingPage() {
               <Logo size="md" />
             </Link>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <ThemeToggle />
-              <Link to="/install">
+              <Link to="/install" className="hidden sm:inline-flex">
                 <Button variant="ghost" size="sm">
                   Install App
                 </Button>
@@ -61,8 +61,8 @@ export default function LandingPage() {
                 </Button>
               </Link>
               <Link to="/register">
-                <Button variant="default" size="sm">
-                  Register Device
+                <Button variant="default" size="sm" className="text-xs sm:text-sm">
+                  Register
                 </Button>
               </Link>
             </div>
