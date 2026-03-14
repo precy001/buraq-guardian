@@ -124,12 +124,17 @@ export default function UserDashboard() {
           </div>
         </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
           <SubscriptionPanel
             subscription={subscription}
             productId={user?.productId || 'BRQ-XXXX-XXXX'}
           />
           <PaymentPanel currentPlanId={subscription?.planName} />
+        </div>
+
+        {/* Activity History */}
+        <div className="mt-6 sm:mt-8">
+          <ActivityHistory productId={user?.productId || ''} />
         </div>
       </main>
 
