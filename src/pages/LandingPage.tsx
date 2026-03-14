@@ -48,9 +48,9 @@ export default function LandingPage() {
               <Logo size="md" />
             </Link>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <ThemeToggle />
-              <Link to="/install">
+              <Link to="/install" className="hidden sm:inline-flex">
                 <Button variant="ghost" size="sm">
                   Install App
                 </Button>
@@ -61,8 +61,8 @@ export default function LandingPage() {
                 </Button>
               </Link>
               <Link to="/register">
-                <Button variant="default" size="sm">
-                  Register Device
+                <Button variant="default" size="sm" className="text-xs sm:text-sm">
+                  Register
                 </Button>
               </Link>
             </div>
@@ -84,10 +84,9 @@ export default function LandingPage() {
                 Advanced Pool Safety Technology
               </div>
               
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-bold text-foreground mb-6 leading-tight">
-                Protect Your Loved Ones with 
-              <br />
-                <span className="text-4xl sm:text-5xl lg:text-6xl font-heading font-bold text-foreground mb-6 leading-tight">Intelligent Pool Safety</span>
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-heading font-bold text-foreground mb-6 leading-tight">
+                Protect Your Loved Ones with{' '}
+                <span className="text-3xl sm:text-5xl lg:text-6xl font-heading font-bold text-foreground leading-tight">Intelligent Pool Safety</span>
               </h1>
               
               <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">

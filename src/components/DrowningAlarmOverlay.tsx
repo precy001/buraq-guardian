@@ -35,33 +35,33 @@ export function DrowningAlarmOverlay({ isActive, message, timestamp, onAcknowled
               <AlertTriangle className="w-10 h-10 text-destructive-foreground" />
             </div>
 
-            <h1 className="text-3xl font-heading font-bold text-destructive mb-2">
+            <h1 className="text-2xl sm:text-3xl font-heading font-bold text-destructive mb-2">
               🚨 DROWNING ALERT!
             </h1>
 
-            <p className="text-lg text-foreground font-medium mb-2">
+            <p className="text-base sm:text-lg text-foreground font-medium mb-2">
               {message}
             </p>
 
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="text-sm text-muted-foreground mb-4 sm:mb-6">
               Detected at {new Date(timestamp).toLocaleTimeString()}
             </p>
 
             {/* Emergency contacts */}
-            <div className="flex flex-col gap-3 mb-6">
+            <div className="flex flex-col gap-2 sm:gap-3 mb-4 sm:mb-6">
               <a
                 href="tel:+2349125402776"
-                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-lg"
+                className="flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-base sm:text-lg"
               >
-                <Phone className="w-5 h-5" />
-                Call Emergency: +234 912 540 2776
+                <Phone className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">Call: +234 912 540 2776</span>
               </a>
               <a
                 href="tel:+2347048514845"
-                className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-secondary text-secondary-foreground font-medium"
+                className="flex items-center justify-center gap-2 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl bg-secondary text-secondary-foreground font-medium text-sm sm:text-base"
               >
-                <Phone className="w-5 h-5" />
-                Alternate: +234 704 851 4845
+                <Phone className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">Alt: +234 704 851 4845</span>
               </a>
             </div>
 
