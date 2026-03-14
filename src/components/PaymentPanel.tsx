@@ -169,9 +169,9 @@ export function PaymentPanel({ currentPlanId }: PaymentPanelProps) {
                       : 'border-border hover:border-primary/50 bg-card'
                   } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      <div className={`w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center ${
                         plan.popular ? 'gradient-water' : 'bg-muted'
                       }`}>
                         {plan.popular ? (
@@ -183,7 +183,7 @@ export function PaymentPanel({ currentPlanId }: PaymentPanelProps) {
                         )}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold">{plan.name}</h3>
                           {plan.popular && (
                             <Badge variant="default" className="text-xs">
@@ -199,12 +199,12 @@ export function PaymentPanel({ currentPlanId }: PaymentPanelProps) {
                         <p className="text-sm text-muted-foreground">{plan.duration}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold font-heading">{formatPrice(plan.price)}</p>
+                    <div className="text-left sm:text-right ml-13 sm:ml-0">
+                      <p className="text-xl sm:text-2xl font-bold font-heading">{formatPrice(plan.price)}</p>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {plan.features.map((feature) => (
                       <div key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Check className="w-4 h-4 text-success flex-shrink-0" />

@@ -20,6 +20,7 @@ export function usePushNotifications(productId: string | undefined) {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [permissionState, setPermissionState] = useState<string>('default');
+  const subscribedRef = useRef(false);
 
   useEffect(() => {
     const supported = 'serviceWorker' in navigator && 'PushManager' in window;
@@ -27,6 +28,20 @@ export function usePushNotifications(productId: string | undefined) {
 
     if (supported) {
       setPermissionState(Notification.permission);
+
+      // Pre-register the service worker immediately so it's ready for push events
+      navigator.serviceWorker.register('/sw-push.js', { scope: '/' }).catch((err) => {
+        console.warn('SW pre-registration failed:', err);
+      });
+
+      // Check if already subscribed
+      navigator.serviceWorker.ready.then(async (reg) => {
+        const existing = await reg.pushManager.getSubscription();
+        if (existing) {
+          setIsSubscribed(true);
+          subscribedRef.current = true;
+        }
+      }).catch(() => {});
     }
   }, []);
 
@@ -44,13 +59,27 @@ export function usePushNotifications(productId: string | undefined) {
         return false;
       }
 
-      // Register the push service worker
-      const registration = await navigator.serviceWorker.register('/sw-push.js', {
-        scope: '/',
-      });
+      // Ensure service worker is registered and active
+      let registration: ServiceWorkerRegistration;
+      try {
+        registration = await navigator.serviceWorker.register('/sw-push.js', { scope: '/' });
+      } catch {
+        registration = await navigator.serviceWorker.ready;
+      }
 
-      // Wait for the service worker to be ready
-      await navigator.serviceWorker.ready;
+      // Wait for the service worker to become active
+      if (!registration.active) {
+        await new Promise<void>((resolve) => {
+          const sw = registration.installing || registration.waiting;
+          if (!sw) { resolve(); return; }
+          sw.addEventListener('statechange', function handler() {
+            if (sw.state === 'activated') {
+              sw.removeEventListener('statechange', handler);
+              resolve();
+            }
+          });
+        });
+      }
 
       // Check for existing subscription
       let subscription = await registration.pushManager.getSubscription();
@@ -58,8 +87,8 @@ export function usePushNotifications(productId: string | undefined) {
       if (!subscription) {
         if (!VAPID_PUBLIC_KEY) {
           console.warn('VAPID public key not configured. Push notifications require VAPID keys.');
-          // Still mark as subscribed for basic notifications
           setIsSubscribed(true);
+          subscribedRef.current = true;
           return true;
         }
 
@@ -72,7 +101,7 @@ export function usePushNotifications(productId: string | undefined) {
       }
 
       // Send subscription to server
-      await fetch(`${API_BASE_URL}/push/subscribe.php`, {
+      const resp = await fetch(`${API_BASE_URL}/push/subscribe.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,7 +110,13 @@ export function usePushNotifications(productId: string | undefined) {
         }),
       });
 
+      if (!resp.ok) {
+        console.error('Failed to save push subscription on server:', resp.status);
+      }
+
       setIsSubscribed(true);
+      subscribedRef.current = true;
+      console.log('✅ Push notifications subscribed successfully');
       return true;
     } catch (error) {
       console.error('Failed to subscribe to push notifications:', error);
@@ -89,12 +124,22 @@ export function usePushNotifications(productId: string | undefined) {
     }
   }, [isSupported, productId]);
 
-  // Auto-subscribe when product ID is available
+  // Auto-subscribe when product ID is available — retry up to 3 times
   useEffect(() => {
-    if (productId && isSupported && !isSubscribed) {
-      subscribeToPush();
-    }
-  }, [productId, isSupported, isSubscribed, subscribeToPush]);
+    if (!productId || !isSupported || subscribedRef.current) return;
+
+    let attempts = 0;
+    const trySubscribe = async () => {
+      if (subscribedRef.current || attempts >= 3) return;
+      attempts++;
+      const success = await subscribeToPush();
+      if (!success && attempts < 3) {
+        setTimeout(trySubscribe, 2000 * attempts);
+      }
+    };
+
+    trySubscribe();
+  }, [productId, isSupported, subscribeToPush]);
 
   return { isSubscribed, isSupported, permissionState, subscribeToPush };
 }

@@ -87,7 +87,7 @@ export default function UserDashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
+          <h1 className="text-2xl sm:text-3xl font-heading font-bold text-foreground mb-2">
             Welcome back, {user?.fullName?.split(' ')[0] || 'User'}!
           </h1>
           <p className="text-muted-foreground">

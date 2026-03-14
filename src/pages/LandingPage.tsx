@@ -84,10 +84,9 @@ export default function LandingPage() {
                 Advanced Pool Safety Technology
               </div>
               
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-bold text-foreground mb-6 leading-tight">
-                Protect Your Loved Ones with 
-              <br />
-                <span className="text-4xl sm:text-5xl lg:text-6xl font-heading font-bold text-foreground mb-6 leading-tight">Intelligent Pool Safety</span>
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-heading font-bold text-foreground mb-6 leading-tight">
+                Protect Your Loved Ones with{' '}
+                <span className="text-3xl sm:text-5xl lg:text-6xl font-heading font-bold text-foreground leading-tight">Intelligent Pool Safety</span>
               </h1>
               
               <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
