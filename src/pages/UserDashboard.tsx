@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { SubscriptionPanel } from '@/components/SubscriptionPanel';
 import { PaymentPanel } from '@/components/PaymentPanel';
+import { ActivityHistory } from '@/components/ActivityHistory';
 import { DrowningAlarmOverlay } from '@/components/DrowningAlarmOverlay';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
