@@ -114,7 +114,7 @@ export default function RegisterPage() {
           {errors.productId && <p className="text-sm text-destructive">{errors.productId}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="fullName" required>Full Name</Label>
             <div className="relative">
