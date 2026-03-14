@@ -43,12 +43,12 @@ export default function UserDashboard() {
               <Logo size="md" />
             </Link>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-3">
               {/* Alert status indicator */}
               {isSupported && (
                 <button
                   onClick={subscribeToPush}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                     isSubscribed
                       ? 'bg-success/10 text-success'
                       : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 cursor-pointer'
@@ -63,15 +63,15 @@ export default function UserDashboard() {
                   <span className="hidden sm:inline">{isSubscribed ? 'Notifications On' : 'Enable Notifications'}</span>
                 </button>
               )}
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted">
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted">
                 <User className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">{user?.fullName}</span>
+                <span className="text-sm font-medium text-foreground truncate max-w-[120px]">{user?.fullName}</span>
               </div>
               <ThemeToggle />
-              <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)}>
-                <Settings className="w-5 h-5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={() => setSettingsOpen(true)}>
+                <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
+              <Button variant="outline" size="sm" className="h-8 sm:h-9 px-2 sm:px-3" onClick={handleLogout}>
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline ml-2">Logout</span>
               </Button>
